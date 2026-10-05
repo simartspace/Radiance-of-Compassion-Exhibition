@@ -920,52 +920,34 @@
         let activeArtworkIndex = 0;
         let isZoomed = false;
         let ownerMode = false; // Locked by default for security
-// --- COMPLETE GRAPHICS & AUDIO ENGINE INJECTION ---
-const styleBypass = document.createElement('style');
-styleBypass.innerHTML = `
-    #owner-overlay, .owner-verification, [id*="overlay"], [class*="overlay"] { 
-        display: none !important; 
-        visibility: hidden !important; 
-        pointer-events: none !important; 
-        opacity: 0 !important; 
-    }
-    body, html { 
-        overflow: auto !important; 
-        background: transparent !important; 
-    }
-    #tts-btn-zh, #tts-btn-en {
-        position: relative !important;
-        z-index: 999999 !important;
-        pointer-events: auto !important;
-    }
-`;
-document.head.appendChild(styleBypass);
-
-// Global browser engine listener override
+  let ownerMode = false; // Locked by default for security
+// --- SAFELY WIPE LOCK SCREEN WITHOUT BREAKING THE 3D SCENE ---
 document.addEventListener("DOMContentLoaded", function() {
-    const lockScreen = document.getElementById('owner-overlay') || document.querySelector('.owner-verification');
-    if (lockScreen) lockScreen.remove();
+    // Wait half a second for the 3D room, artwork frames, and cameras to load safely first
+    setTimeout(function() {
+        const lockScreen = document.getElementById('owner-overlay') || document.querySelector('.owner-verification');
+        if (lockScreen) {
+            lockScreen.style.display = 'none';
+            lockScreen.style.pointerEvents = 'none';
+            lockScreen.style.opacity = '0';
+            lockScreen.remove(); // Safely throw it away
+        }
+    }, 500); 
 });
 
-// Intercept browser window pointer clicks to guarantee target capture
+// Force-unlock the Audio System when visitors click either text-to-speech button
 window.addEventListener('click', function(e) {
     const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en');
     if (!targetButton) return;
     
-    // Stop the 3D space engine from eating the button tap
-    e.stopPropagation();
+    e.stopPropagation(); // Keep the 3D frame engine from swallowing the click
     
-    // Safety wake-up call for mobile browser text-to-speech blocks
+    // Reset browser audio contexts
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         window.speechSynthesis.resume();
     }
-    if (window.AudioContext || window.webkitAudioContext) {
-        const actx = window.audioCtx || (window.threeAudioListener ? window.threeAudioListener.context : null);
-        if (actx && actx.state === 'suspended') actx.resume();
-    }
-
-    // Identify current active template artwork data fields
+    
     const dataIndex = window.activeArtworkIndex !== undefined ? window.activeArtworkIndex : 0;
     const artworks = window.ARTWORKS_DATA || [];
     if (!artworks[dataIndex]) return;
@@ -973,22 +955,20 @@ window.addEventListener('click', function(e) {
     const targetArt = artworks[dataIndex];
     const isChinese = targetButton.id === 'tts-btn-zh';
     
-    // Extract standard layout text strings safely from template matrices
     let speakText = "";
     if (isChinese) {
-        speakText = `${targetArt.name_zh || ''}. 尺寸为 ${targetArt.dimensions || ''}. ${targetArt.desc_zh || ''}`;
+        speakText = `${targetArt.name_zh || '作品'}. ${targetArt.desc_zh || ''}`;
     } else {
-        speakText = `${targetArt.name_en || ''}. Dimensions are ${targetArt.dimensions || ''}. ${targetArt.desc_en || ''}`;
+        speakText = `${targetArt.name_en || 'Artwork'}. ${targetArt.desc_en || ''}`;
     }
 
     if (speakText.trim() !== "") {
         const utterance = new SpeechSynthesisUtterance(speakText);
         utterance.lang = isChinese ? 'zh-CN' : 'en-US';
-        utterance.rate = 0.95; // Soft gallery guide pace
+        utterance.rate = 0.9; 
         window.speechSynthesis.speak(utterance);
     }
-}, true); // The 'true' value captures the click before the 3D space engine intercepts it
-
+}, true);
 
         const defaultCamPos = { x: 0, y: 1.6, z: 11 };
         const defaultCamTarget = { x: 0, y: 1.6, z: 0 };
