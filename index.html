@@ -1807,28 +1807,44 @@
         window.addEventListener('DOMContentLoaded', async () => {
             await applySavedArtworksData();
             init3D();
-                        // Upgraded Audio Guide Engine targeting Descriptions & Premium Voices
+                            // Smart Audio Guide Engine targeting the true description text
         const synth = window.speechSynthesis;
         
-        // Helper to find the best available voice on the device
         const setBestVoice = (utterance, langCode) => {
             const voices = synth.getVoices();
-            // Try to find a premium/natural system voice first
             let voice = voices.find(v => v.lang.includes(langCode) && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium')));
             if (!voice) voice = voices.find(v => v.lang.includes(langCode));
             if (voice) utterance.voice = voice;
         };
 
-        // Helper to extract description text near the active artwork panel
+        // Advanced text hunter that finds the text right under the Description header
         const getArtworkDescription = (fallbackText) => {
-            // Searches for the text paragraph located under your Artwork Description heading
-            const descEl = document.querySelector('h4, .artwork-description, p');
-            return descEl ? descEl.innerText : fallbackText;
+            const headers = Array.from(document.querySelectorAll('h4, h5, div'));
+            // Find the header talking about Description or 解说
+            const descHeader = headers.find(h => h.innerText.includes('Description') || h.innerText.includes('解说'));
+            
+            if (descHeader) {
+                let nextEl = descHeader.nextElementSibling;
+                let descriptionText = "";
+                
+                // Gather all paragraph/text elements directly below the description header
+                while (nextEl && (nextEl.tagName === 'P' || nextEl.tagName === 'DIV') && !nextEl.id.includes('tts')) {
+                    if (nextEl.innerText.trim().length > 0) {
+                        descriptionText += nextEl.innerText + " ";
+                    }
+                    nextEl = nextEl.nextElementSibling;
+                }
+                
+                if (descriptionText.trim().length > 5) {
+                    return descriptionText.trim();
+                }
+            }
+            return fallbackText;
         };
 
         document.getElementById('tts-btn-zh')?.addEventListener('click', () => {
             if (synth.speaking) synth.cancel();
-            const text = getArtworkDescription("欢迎阅读本幅佛菩萨圣像艺术展作品解说。");
+            const text = getArtworkDescription("未找到详细作品解说。");
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'zh-CN';
             setBestVoice(utterance, 'zh');
@@ -1837,17 +1853,17 @@
 
         document.getElementById('tts-btn-en')?.addEventListener('click', () => {
             if (synth.speaking) synth.cancel();
-            const text = getArtworkDescription("Welcome to the Radiance of Compassion exhibition audio guide description.");
+            const text = getArtworkDescription("Detailed artwork description not found.");
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'en-US';
             setBestVoice(utterance, 'en');
             synth.speak(utterance);
         });
 
-        // Ensure system voices are fully loaded in Chrome/Edge browsers
         if (speechSynthesis.onvoiceschanged !== undefined) {
             speechSynthesis.onvoiceschanged = synth.getVoices;
         }
+
         });
     });
     </script>
