@@ -920,7 +920,7 @@
         let activeArtworkIndex = 0;
         let isZoomed = false;
         let ownerMode = false; // Locked by default for security
-// 1. Force structural visibility rules right away
+// --- COMPLETE GRAPHICS & AUDIO AUTOMATIC BYPASS ---
 const styleBypass = document.createElement('style');
 styleBypass.innerHTML = `
     #owner-overlay, .owner-verification, [id*="overlay"], [class*="overlay"] { 
@@ -936,12 +936,31 @@ styleBypass.innerHTML = `
 `;
 document.head.appendChild(styleBypass);
 
-// 2. Clear any active javascript block states on load
+// Instantly force web browser audio components to wake up and connect to the play actions
 document.addEventListener("DOMContentLoaded", function() {
+    // 1. Remove the physical locking screen layer completely
     const lockScreen = document.getElementById('owner-overlay') || document.querySelector('.owner-verification');
     if (lockScreen) lockScreen.remove();
-});
 
+    // 2. Clear out browser security limits when the Chinese or English play buttons are pressed
+    const ttsButtons = [document.getElementById('tts-btn-zh'), document.getElementById('tts-btn-en')];
+    ttsButtons.forEach(btn => {
+        if (btn) {
+            btn.addEventListener('click', function() {
+                // Resume native speech synthesis context
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.resume();
+                }
+                // Resume standard web sound canvas drivers if used by the 3D player engine
+                if (window.AudioContext || window.webkitAudioContext) {
+                    const actx = window.audioCtx || (window.threeAudioListener ? window.threeAudioListener.context : null);
+                    if (actx && actx.state === 'suspended') {
+                        actx.resume();
+                    }
+                }
+            }, true); // Setting to 'true' intercepts and overrides any underlying script failure
+        }
+    });
 
         const defaultCamPos = { x: 0, y: 1.6, z: 11 };
         const defaultCamTarget = { x: 0, y: 1.6, z: 0 };
