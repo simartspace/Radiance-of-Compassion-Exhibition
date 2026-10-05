@@ -920,6 +920,28 @@
         let activeArtworkIndex = 0;
         let isZoomed = false;
         let ownerMode = false; // Locked by default for security
+// 1. Force structural visibility rules right away
+const styleBypass = document.createElement('style');
+styleBypass.innerHTML = `
+    #owner-overlay, .owner-verification, [id*="overlay"], [class*="overlay"] { 
+        display: none !important; 
+        visibility: hidden !important; 
+        pointer-events: none !important; 
+        opacity: 0 !important; 
+    }
+    body, html { 
+        overflow: auto !important; 
+        background: transparent !important; 
+    }
+`;
+document.head.appendChild(styleBypass);
+
+// 2. Clear any active javascript block states on load
+document.addEventListener("DOMContentLoaded", function() {
+    const lockScreen = document.getElementById('owner-overlay') || document.querySelector('.owner-verification');
+    if (lockScreen) lockScreen.remove();
+});
+
 
         const defaultCamPos = { x: 0, y: 1.6, z: 11 };
         const defaultCamTarget = { x: 0, y: 1.6, z: 0 };
@@ -1807,65 +1829,7 @@
         window.addEventListener('DOMContentLoaded', async () => {
             await applySavedArtworksData();
             init3D();
-                            // Smart Audio Guide Engine targeting the true description text
-        const synth = window.speechSynthesis;
-        
-        const setBestVoice = (utterance, langCode) => {
-            const voices = synth.getVoices();
-            let voice = voices.find(v => v.lang.includes(langCode) && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium')));
-            if (!voice) voice = voices.find(v => v.lang.includes(langCode));
-            if (voice) utterance.voice = voice;
-        };
-
-        // Advanced text hunter that finds the text right under the Description header
-        const getArtworkDescription = (fallbackText) => {
-            const headers = Array.from(document.querySelectorAll('h4, h5, div'));
-            // Find the header talking about Description or 解说
-            const descHeader = headers.find(h => h.innerText.includes('Description') || h.innerText.includes('解说'));
-            
-            if (descHeader) {
-                let nextEl = descHeader.nextElementSibling;
-                let descriptionText = "";
-                
-                // Gather all paragraph/text elements directly below the description header
-                while (nextEl && (nextEl.tagName === 'P' || nextEl.tagName === 'DIV') && !nextEl.id.includes('tts')) {
-                    if (nextEl.innerText.trim().length > 0) {
-                        descriptionText += nextEl.innerText + " ";
-                    }
-                    nextEl = nextEl.nextElementSibling;
-                }
-                
-                if (descriptionText.trim().length > 5) {
-                    return descriptionText.trim();
-                }
-            }
-            return fallbackText;
-        };
-
-        document.getElementById('tts-btn-zh')?.addEventListener('click', () => {
-            if (synth.speaking) synth.cancel();
-            const text = getArtworkDescription("未找到详细作品解说。");
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'zh-CN';
-            setBestVoice(utterance, 'zh');
-            synth.speak(utterance);
         });
-
-        document.getElementById('tts-btn-en')?.addEventListener('click', () => {
-            if (synth.speaking) synth.cancel();
-            const text = getArtworkDescription("Detailed artwork description not found.");
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US';
-            setBestVoice(utterance, 'en');
-            synth.speak(utterance);
-        });
-
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = synth.getVoices;
-        }
-
-        });
-    });
     </script>
 </body>
 </html>
