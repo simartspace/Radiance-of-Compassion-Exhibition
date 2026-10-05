@@ -1807,27 +1807,49 @@
         window.addEventListener('DOMContentLoaded', async () => {
             await applySavedArtworksData();
             init3D();
-                    // Easy Web Speech Fix for Audio Guide Buttons
+                        // Upgraded Audio Guide Engine targeting Descriptions & Premium Voices
         const synth = window.speechSynthesis;
         
+        // Helper to find the best available voice on the device
+        const setBestVoice = (utterance, langCode) => {
+            const voices = synth.getVoices();
+            // Try to find a premium/natural system voice first
+            let voice = voices.find(v => v.lang.includes(langCode) && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium')));
+            if (!voice) voice = voices.find(v => v.lang.includes(langCode));
+            if (voice) utterance.voice = voice;
+        };
+
+        // Helper to extract description text near the active artwork panel
+        const getArtworkDescription = (fallbackText) => {
+            // Searches for the text paragraph located under your Artwork Description heading
+            const descEl = document.querySelector('h4, .artwork-description, p');
+            return descEl ? descEl.innerText : fallbackText;
+        };
+
         document.getElementById('tts-btn-zh')?.addEventListener('click', () => {
             if (synth.speaking) synth.cancel();
-            // Get description text from your page (falls back to a standard greeting if empty)
-            const text = document.querySelector('h2')?.innerText || "欢迎来到佛菩萨圣像艺术展";
+            const text = getArtworkDescription("欢迎阅读本幅佛菩萨圣像艺术展作品解说。");
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'zh-CN'; // Set language to Chinese
+            utterance.lang = 'zh-CN';
+            setBestVoice(utterance, 'zh');
             synth.speak(utterance);
         });
 
         document.getElementById('tts-btn-en')?.addEventListener('click', () => {
             if (synth.speaking) synth.cancel();
-            const text = document.querySelector('h3')?.innerText || "Welcome to the Radiance of Compassion Exhibition";
+            const text = getArtworkDescription("Welcome to the Radiance of Compassion exhibition audio guide description.");
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US'; // Set language to English
+            utterance.lang = 'en-US';
+            setBestVoice(utterance, 'en');
             synth.speak(utterance);
         });
 
+        // Ensure system voices are fully loaded in Chrome/Edge browsers
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = synth.getVoices;
+        }
         });
+    });
     </script>
 </body>
 </html>
