@@ -1807,6 +1807,26 @@
         window.addEventListener('DOMContentLoaded', async () => {
             await applySavedArtworksData();
             init3D();
+                    // Easy Web Speech Fix for Audio Guide Buttons
+        const synth = window.speechSynthesis;
+        
+        document.getElementById('tts-btn-zh')?.addEventListener('click', () => {
+            if (synth.speaking) synth.cancel();
+            // Get description text from your page (falls back to a standard greeting if empty)
+            const text = document.querySelector('h2')?.innerText || "欢迎来到佛菩萨圣像艺术展";
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-CN'; // Set language to Chinese
+            synth.speak(utterance);
+        });
+
+        document.getElementById('tts-btn-en')?.addEventListener('click', () => {
+            if (synth.speaking) synth.cancel();
+            const text = document.querySelector('h3')?.innerText || "Welcome to the Radiance of Compassion Exhibition";
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US'; // Set language to English
+            synth.speak(utterance);
+        });
+
         });
     </script>
 </body>
