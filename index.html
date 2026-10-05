@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>慈光 - 常書•佛菩薩聖像藝術展 | Radiance of Compassion Virtual Exhibition</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js 3D Library CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        studio: '#F8F8F6',
+                        silver: '#E2E8F0',
+                        accentGold: '#FFD700',
+                        warmDark: '#0A0F1D',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        serif: ['Georgia', 'serif']
+                    }
+                }
+            }
+        };
+    </script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #050812;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: pan-y;
+        }
+
+        /* Luminous Gold Shimmer & Glow Gradients */
+        .gold-text-gradient {
+            background: linear-gradient(135deg, #FFFFFF 0%, #FFF5CC 25%, #FFD700 50%, #FFB700 80%, #FFD700 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 9px rgba(255, 215, 0, 0.54)) drop-shadow(0 0 18px rgba(255, 165, 0, 0.32));
+        }
+
+        .gold-subtext {
+            background: linear-gradient(135deg, #FFFFFF 0%, #FFE98A 50%, #FFD700 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.9));
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 215, 0, 0.35);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 15px rgba(255, 215, 0, 0.1);
+        }
+
+        .glass-panel-light {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 215, 0, 0.4);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 215, 0, 0.7);
+        }
+
+        .pulse-glow {
+            animation: pulseGlow 3s infinite ease-in-out;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4)); }
+            50% { filter: drop-shadow(0 0 18px rgba(255, 215, 0, 0.8)); }
+        }
+    </style>
+</head>
+<body class="text-white antialiased h-screen w-screen overflow-hidden bg-[#050812]">
+
+    <div id="title-banner-layer" class="fixed top-2 md:top-4 left-0 right-0 z-20 pointer-events-auto flex justify-center transition-all duration-500 transform scale-100 opacity-100 px-3">
+        <div id="title-banner" class="flex flex-col items-center justify-center text-center mx-auto transition-all duration-500 p-2 md:px-6 md:py-2 drop-shadow-2xl">
+            <h1 class="gold-text-gradient text-[10px] sm:text-xs md:text-sm tracking-[0.35em] uppercase font-serif font-black mb-1">
+                RADIANCE OF COMPASSION
+            </h1>
+
+            <div class="flex items-center justify-center space-x-2 sm:space-x-4 md:space-x-6 my-0.5">
+                <div class="hidden sm:block gold-subtext text-[11px] md:text-xs font-serif leading-tight tracking-widest text-right select-none opacity-95 border-r border-amber-300/60 pr-3.5">
+                    <div>常</div>
+                    <div>書</div>
+                    <div class="text-[8px] my-0.5 text-amber-200">•</div>
+                    <div>佛</div>
+                    <div>菩</div>
+                    <div>萨</div>
+                    <div>圣</div>
+                    <div>像</div>
+                    <div>艺</div>
+                    <div>术</div>
+                    <div>展</div>
+                </div>
+
+                <div class="gold-text-gradient font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-widest px-1 sm:px-2 flex items-center space-x-2 sm:space-x-3 pulse-glow">
+                    <span>慈</span>
+                    <span>光</span>
+                </div>
+
+                <div class="gold-subtext text-[9px] sm:text-[10px] md:text-xs font-serif italic text-left max-w-[110px] sm:max-w-[140px] md:max-w-[160px] leading-snug border-l border-amber-300/60 pl-2.5 sm:pl-3.5">
+                    <p class="font-normal text-amber-100">Contemporary Chinese Buddhist Art Exhibition</p>
+                    <p class="font-bold text-yellow-300 mt-0.5">by Sue Loh (常書)</p>
+                </div>
+            </div>
+
+            <div class="sm:hidden text-[10px] gold-subtext font-serif tracking-widest mt-0.5 font-bold">
+                常書 • 佛菩薩聖像藝術展
+            </div>
+        </div>
+    </div>
+
+    <!-- 3D Canvas Background Container -->
+    <div id="canvas-container"></div>
+
+    <header class="fixed top-0 left-0 right-0 z-30 p-2.5 sm:p-4 md:p-5 flex justify-end items-start pointer-events-none">
+        <div class="pointer-events-auto flex items-center space-x-1.5 sm:space-x-2 md:space-x-3 mt-1">
+            <button id="toggle-list-btn" class="glass-panel px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-bold text-yellow-200 hover:text-yellow-100 transition flex items-center space-x-1 sm:space-x-1.5 shadow-lg active:scale-95">
+                <i class="fa-solid fa-list-ul text-amber-400"></i>
+                <span class="inline">Catalog / 清单</span>
+            </button>
+            <button id="owner-mode-toggle" class="glass-panel px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-bold bg-amber-500/10 text-yellow-200 hover:bg-amber-500/25 transition flex items-center space-x-1 sm:space-x-1.5 border border-amber-400/40 shadow-lg active:scale-95">
+                <i id="owner-lock-icon" class="fa-solid fa-lock text-amber-400"></i>
+                <span id="owner-status-label" class="hidden sm:inline">Owner Mode (Locked)</span>
+                <span class="sm:hidden text-[10px]">Owner</span>
+            </button>
+            <button id="reset-cam-btn" class="glass-panel px-2.5 py-1.5 sm:px-3 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-bold text-yellow-200 hover:text-yellow-100 transition shadow-lg flex items-center space-x-1 sm:space-x-1.5 active:scale-95" title="Reset View">
+                <i class="fa-solid fa-arrows-to-eye text-amber-400"></i>
+                <span class="hidden md:inline">Overview View</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Toast Notification Overlay -->
+    <div id="toast-notification" class="fixed top-20 right-4 sm:right-6 z-50 transform translate-y-[-20px] opacity-0 pointer-events-none transition-all duration-300 ease-out glass-panel px-4 py-3 rounded-xl text-xs font-bold text-yellow-200 border border-amber-400 shadow-2xl flex items-center space-x-2">
+        <i class="fa-solid fa-cloud-arrow-up text-amber-400 text-sm"></i>
+        <span id="toast-message">Saved to Cloud</span>
+    </div>
+
+    <div class="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto w-[92%] sm:w-auto max-w-md">
+        <div class="glass-panel px-3 sm:px-5 py-2.5 rounded-2xl flex items-center justify-between space-x-2 sm:space-x-4 shadow-2xl">
+            <button id="prev-art-btn" class="p-2 sm:p-2.5 hover:bg-amber-500/20 rounded-xl text-yellow-200 hover:text-white transition active:scale-95" title="Previous Artwork">
+                <i class="fa-solid fa-chevron-left text-xs sm:text-sm"></i>
+            </button>
+            <div class="text-center px-1 flex-1 min-w-0 cursor-pointer" id="quick-bar-trigger">
+                <div id="quick-art-title" class="text-xs sm:text-sm font-bold text-yellow-100 truncate">Medicine Buddha / 药师佛</div>
+                <div id="quick-art-idx" class="text-[9px] sm:text-[11px] text-amber-300/80 tracking-wider font-semibold">ARTWORK 1 / 15 • CLICK TO DETAILS</div>
+            </div>
+            <button id="next-art-btn" class="p-2 sm:p-2.5 hover:bg-amber-500/20 rounded-xl text-yellow-200 hover:text-white transition active:scale-95" title="Next Artwork">
+                <i class="fa-solid fa-chevron-right text-xs sm:text-sm"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="artwork-drawer" class="fixed inset-y-0 right-0 w-full sm:w-[480px] md:w-[520px] lg:w-[560px] max-w-full z-40 transform translate-x-full transition-transform duration-500 ease-out pointer-events-auto flex flex-col glass-panel-light text-gray-800 border-l border-white shadow-2xl">
+        <div class="p-4 sm:p-6 border-b border-gray-200/60 flex justify-between items-center bg-white/90">
+            <div class="min-w-0 pr-2">
+                <span id="drawer-artwork-no" class="inline-block px-3 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-100 text-amber-900 tracking-wider mb-1">
+                    NO. 1
+                </span>
+                <h2 id="drawer-title-zh" class="text-base sm:text-xl font-bold text-gray-900 leading-snug truncate">药师佛</h2>
+                <h3 id="drawer-title-en" class="text-[11px] sm:text-sm font-medium text-gray-500 truncate">Medicine Buddha</h3>
+            </div>
+            <button id="close-drawer-btn" class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center transition shrink-0 active:scale-95">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+            <!-- Image Frame Preview with Lightbox Trigger -->
+            <div class="relative group rounded-2xl overflow-hidden bg-gray-900 border border-gray-200 shadow-sm flex items-center justify-center p-3 h-60 sm:h-72 md:h-80 cursor-zoom-in" id="open-lightbox-trigger">
+                <img id="drawer-img" src="" alt="Artwork detail" class="max-w-full max-h-full object-contain transition duration-300 group-hover:scale-105 drop-shadow">
+                <div id="price-badge" class="absolute top-3 right-3 sm:top-4 sm:right-4 px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold bg-white/95 backdrop-blur text-gray-900 shadow-md border border-amber-200">
+                    RM --
+                </div>
+                <div class="absolute bottom-3 left-3 px-3 py-1 bg-black/60 backdrop-blur rounded-lg text-[10px] text-yellow-200 flex items-center gap-1 opacity-80 group-hover:opacity-100 transition">
+                    <i class="fa-solid fa-expand"></i> Click to Zoom / 点击放大
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5 sm:gap-3 text-xs bg-white/90 p-3 sm:p-4 rounded-xl border border-gray-200 shadow-sm">
+                <div>
+                    <span class="text-gray-400 block text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Medium / 材质</span>
+                    <span id="drawer-medium" class="font-medium text-gray-800 text-[11px] sm:text-xs">Watercolour on Satin silk / 绢本水彩</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Dimensions / 尺寸</span>
+                    <span id="drawer-size" class="font-medium text-gray-800 text-[11px] sm:text-xs">91.44 * 152.4 cm</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Year / 年份</span>
+                    <span id="drawer-year" class="font-medium text-gray-800 text-[11px] sm:text-xs">Sept 2023</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Artist / 画家</span>
+                    <span class="font-medium text-gray-800 text-[11px] sm:text-xs">常书 Sue Loh</span>
+                </div>
+            </div>
+
+            <!-- Gemini TTS Audio Guide (Kore Voice Persona) -->
+            <div class="space-y-2.5 bg-amber-50 border border-amber-200 p-3.5 sm:p-4 rounded-2xl shadow-sm">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-amber-900 flex items-center gap-1.5 sm:gap-2">
+                        <i class="fa-solid fa-microphone-lines text-amber-600"></i> Gemini TTS Audio Guide
+                    </span>
+                    <span id="tts-status-tag" class="text-[10px] px-2.5 py-0.5 rounded bg-amber-200 text-amber-900 font-semibold">Ready</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5 sm:gap-3">
+                    <button id="tts-btn-zh" class="flex items-center justify-center space-x-1.5 sm:space-x-2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 text-[11px] sm:text-xs font-bold transition shadow-sm active:scale-95">
+                        <i class="fa-solid fa-play text-amber-600"></i>
+                        <span>中文讲解 (Kore)</span>
+                    </button>
+                    <button id="tts-btn-en" class="flex items-center justify-center space-x-1.5 sm:space-x-2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 text-[11px] sm:text-xs font-bold transition shadow-sm active:scale-95">
+                        <i class="fa-solid fa-play text-amber-600"></i>
+                        <span>English Audio (Kore)</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <h4 class="text-[11px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider">Artwork Description / 作品解说</h4>
+                <div class="bg-white/90 p-3.5 sm:p-4 rounded-xl border border-gray-200 space-y-2.5 shadow-sm">
+                    <p id="drawer-remarks-zh" class="text-gray-800 font-serif text-xs sm:text-sm leading-relaxed">--</p>
+                    <div class="border-t border-gray-200 pt-2.5">
+                        <p id="drawer-remarks-en" class="text-gray-600 text-[11px] sm:text-xs leading-relaxed font-sans">--</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="owner-upload-panel" class="border-2 border-dashed border-amber-400 bg-amber-50 p-4 sm:p-5 rounded-2xl space-y-3.5 shadow-inner">
+                <div class="flex items-center justify-between text-xs font-bold text-amber-900">
+                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-pen-to-square text-amber-600"></i> Owner Editing Suite</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">Active</span>
+                </div>
+                <p class="text-[11px] sm:text-xs text-amber-800">Upload custom artwork image or update price for frame #<span id="owner-frame-id" class="font-bold">1</span>.</p>
+
+                <div class="space-y-1">
+                    <label class="block text-[10px] sm:text-[11px] font-bold text-amber-900 uppercase">Upload Custom Painting</label>
+                    <input type="file" id="owner-file-input" accept="image/*" class="text-[11px] text-gray-700 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer w-full bg-white p-1 rounded-xl border border-amber-200">
+                </div>
+
+                <div class="space-y-1 pt-0.5">
+                    <label class="block text-[10px] sm:text-[11px] font-bold text-amber-900 uppercase">Update Price (RM)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="owner-price-input" placeholder="e.g. RM16,800" class="flex-1 text-xs px-3 py-2 rounded-xl border border-amber-300 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-semibold text-gray-900">
+                        <button id="owner-save-btn" class="px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold transition shadow active:scale-95">Save</button>
+                    </div>
+                </div>
+
+                <!-- Standalone HTML Exporter with All Images Embedded -->
+                <div class="pt-2 border-t border-amber-200 space-y-2">
+                    <button id="export-standalone-html-btn" class="w-full py-2.5 px-3 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow transition active:scale-95">
+                        <i class="fa-solid fa-file-code text-sm"></i>
+                        <span>Export Standalone HTML (All Images Embedded / 含全图HTML)</span>
+                    </button>
+                    <p class="text-[9.5px] text-amber-800/80 leading-tight italic text-center">
+                        * Use this button to download a complete .html file with all 15 artwork images permanently saved inside.
+                    </p>
+                </div>
+
+                <!-- PIN Security Settings -->
+                <div class="border-t border-amber-200 pt-3 mt-2 space-y-2">
+                    <label class="block text-[10px] sm:text-[11px] font-bold text-amber-900 uppercase">Change Owner PIN / 修改管理密码</label>
+                    <div class="flex gap-2">
+                        <input type="password" id="new-pin-input" maxlength="12" placeholder="New PIN" class="flex-1 text-xs px-3 py-1.5 rounded-xl border border-amber-300 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-semibold text-gray-900">
+                        <button id="change-pin-btn" class="px-3 py-1.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold transition shadow active:scale-95">
+                            Update PIN
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Backup & Sync JSON tools for Gallery Manager -->
+                <div class="border-t border-amber-200 pt-3 mt-2 flex items-center justify-between">
+                    <span class="text-[10px] font-bold text-amber-900">Batch Backup & Restore</span>
+                    <div class="flex space-x-2">
+                        <button id="export-json-btn" class="px-2.5 py-1 bg-amber-200 hover:bg-amber-300 text-amber-900 rounded-lg text-[10px] font-bold transition">
+                            <i class="fa-solid fa-download"></i> Export JSON
+                        </button>
+                        <button id="import-json-btn" class="px-2.5 py-1 bg-amber-200 hover:bg-amber-300 text-amber-900 rounded-lg text-[10px] font-bold transition">
+                            <i class="fa-solid fa-upload"></i> Import JSON
+                        </button>
+                        <input type="file" id="import-file-input" accept=".json" class="hidden">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="catalog-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+        <div class="glass-panel-light w-full max-w-4xl max-h-[85vh] rounded-3xl flex flex-col overflow-hidden shadow-2xl border border-white text-gray-800">
+            <div class="p-4 sm:p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/90">
+                <div>
+                    <h2 class="text-base sm:text-xl font-bold text-gray-900">Exhibition Artwork Catalog</h2>
+                    <p class="text-[11px] sm:text-xs text-gray-500">慈光 - 常書•佛菩薩聖像藝術展 作品全集 (15 Masterpieces)</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="flex bg-gray-100 p-1 rounded-xl text-xs font-bold text-gray-600" id="catalog-filter-tabs">
+                        <button data-filter="all" class="px-2.5 py-1 rounded-lg bg-white text-amber-900 shadow-sm transition">All</button>
+                        <button data-filter="sale" class="px-2.5 py-1 rounded-lg hover:text-amber-900 transition">For Sale</button>
+                        <button data-filter="nfs" class="px-2.5 py-1 rounded-lg hover:text-amber-900 transition">Collection</button>
+                    </div>
+                    <button id="close-catalog-btn" class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center transition active:scale-95 shrink-0">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 sm:p-6">
+                <div id="catalog-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="lightbox-modal" class="fixed inset-0 z-50 hidden bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-4">
+        <button id="close-lightbox-btn" class="absolute top-4 right-4 z-10 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition active:scale-95">
+            <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+        <div class="relative w-full h-full flex items-center justify-center overflow-hidden">
+            <img id="lightbox-img" src="" alt="Zoom artwork detail" class="max-w-full max-h-full object-contain drop-shadow-2xl transition-transform duration-200">
+        </div>
+        <div id="lightbox-caption" class="absolute bottom-6 bg-black/70 backdrop-blur px-6 py-2.5 rounded-2xl text-center border border-amber-400/30">
+            <div id="lightbox-title" class="text-sm font-bold text-amber-200">--</div>
+            <div id="lightbox-subtitle" class="text-xs text-gray-300">--</div>
+        </div>
+    </div>
+
+    <div id="inquiry-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel-light w-full max-w-md rounded-3xl p-6 shadow-2xl border border-white text-gray-800 space-y-4">
+            <div class="flex justify-between items-center border-b border-gray-200 pb-3">
+                <h3 class="font-bold text-base text-gray-900">Artwork Inquiry / 意向收藏</h3>
+                <button id="close-inquiry-btn" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-xs text-amber-900 font-medium space-y-1">
+                <div>Artwork: <span id="inquiry-art-name" class="font-bold">--</span></div>
+                <div>Price: <span id="inquiry-art-price" class="font-bold">--</span></div>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">Your Name / 您的姓名</label>
+                    <input type="text" id="inquiry-name" placeholder="e.g. Mr. Tan" class="w-full px-3 py-2 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">Message / 留言询价</label>
+                    <textarea id="inquiry-msg" rows="3" class="w-full px-3 py-2 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="I would like to inquire about this painting..."></textarea>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <button id="send-whatsapp-btn" class="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition">
+                    <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp
+                </button>
+                <button id="send-email-btn" class="py-2.5 px-3 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition">
+                    <i class="fa-solid fa-paper-plane text-xs"></i> Send Email
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Owner Passcode Verification Modal -->
+    <div id="owner-passcode-modal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
+        <div id="passcode-card" class="glass-panel-light w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-white text-gray-800 space-y-4 text-center transform transition-all duration-200">
+            <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto text-xl shadow-inner">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-lg text-gray-900">Owner Verification</h3>
+                <p class="text-xs text-gray-500 mt-1">Enter your Owner PIN to access editing tools.</p>
+            </div>
+            
+            <div class="space-y-2">
+                <input type="password" id="owner-pin-input" maxlength="12" placeholder="Enter PIN" class="w-full text-center text-lg tracking-[0.3em] font-bold px-4 py-2.5 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-900">
+                <p id="pin-error-msg" class="text-xs text-rose-600 font-bold hidden">Incorrect PIN. Please try again.</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <button id="cancel-passcode-btn" class="py-2.5 px-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-xs transition active:scale-95">
+                    Cancel
+                </button>
+                <button id="submit-passcode-btn" class="py-2.5 px-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition shadow active:scale-95">
+                    Unlock Mode
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'radiance-compassion-exhibition';
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+
+        const DB_NAME = 'RadianceExhibitionDB';
+        const STORE_NAME = 'artwork_uploads';
+
+        function openLocalDB() {
+            return new Promise((resolve) => {
+                try {
+                    const req = indexedDB.open(DB_NAME, 1);
+                    req.onupgradeneeded = (e) => {
+                        const dbInst = e.target.result;
+                        if (!dbInst.objectStoreNames.contains(STORE_NAME)) {
+                            dbInst.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                        }
+                    };
+                    req.onsuccess = (e) => resolve(e.target.result);
+                    req.onerror = () => resolve(null);
+                } catch (e) {
+                    resolve(null);
+                }
+            });
+        }
+
+        async function saveLocalArtwork(artId, customImg, price) {
+            try {
+                if (customImg || price) {
+                    const cacheKey = `art_data_${artId}`;
+                    let prev = {};
+                    try {
+                        const raw = localStorage.getItem(cacheKey);
+                        if (raw) prev = JSON.parse(raw);
+                    } catch (e) {
+                        prev = {};
+                    }
+                    if (customImg) prev.customImg = customImg;
+                    if (price) prev.price = price;
+                    try { localStorage.setItem(cacheKey, JSON.stringify(prev)); } catch(e) {}
+                }
+
+                const dbInst = await openLocalDB();
+                if (!dbInst) return;
+                const tx = dbInst.transaction(STORE_NAME, 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                const getReq = store.get(artId);
+                getReq.onsuccess = () => {
+                    const existing = getReq.result || { id: artId };
+                    if (customImg) existing.customImg = customImg;
+                    if (price) existing.price = price;
+                    existing.updatedAt = new Date().toISOString();
+                    store.put(existing);
+                };
+            } catch (e) {}
+        }
+
+        async function loadAllLocalArtworks() {
+            try {
+                let items = [];
+                const dbInst = await openLocalDB();
+                if (dbInst) {
+                    items = await new Promise((resolve) => {
+                        const tx = dbInst.transaction(STORE_NAME, 'readonly');
+                        const store = tx.objectStore(STORE_NAME);
+                        const req = store.getAll();
+                        req.onsuccess = () => resolve(req.result || []);
+                        req.onerror = () => resolve([]);
+                    });
+                }
+
+                for (let i = 1; i <= 15; i++) {
+                    const lsData = localStorage.getItem(`art_data_${i}`);
+                    if (lsData) {
+                        try {
+                            const parsed = JSON.parse(lsData);
+                            let existing = items.find(a => a.id === i);
+                            if (!existing) {
+                                existing = { id: i };
+                                items.push(existing);
+                            }
+                            if (parsed.customImg && !existing.customImg) existing.customImg = parsed.customImg;
+                            if (parsed.price && !existing.price) existing.price = parsed.price;
+                        } catch(e) {}
+                    }
+                }
+                return items;
+            } catch (e) {
+                return [];
+            }
+        }
+
+        async function applySavedArtworksData() {
+            const localArtworks = await loadAllLocalArtworks();
+            localArtworks.forEach((data) => {
+                const art = window.ARTWORKS_DATA ? window.ARTWORKS_DATA.find(a => a.id === data.id) : null;
+                if (art) {
+                    if (data.price) art.price = data.price;
+                    if (data.customImg) {
+                        art.customImg = data.customImg;
+                        if (window.applyCustomImageToMesh) {
+                            window.applyCustomImageToMesh(art.id, data.customImg);
+                        }
+                    }
+                }
+            });
+        }
+
+        window.saveLocalArtwork = saveLocalArtwork;
+        window.loadAllLocalArtworks = loadAllLocalArtworks;
+        window.applySavedArtworksData = applySavedArtworksData;
+
+        async function fetchCloudArtworksData() {
+            if (!db || !window.ARTWORKS_DATA) return;
+            try {
+                const { getDocs } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                const artworksCol = collection(db, 'artifacts', appId, 'public', 'data', 'artworks');
+                const querySnapshot = await getDocs(artworksCol);
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const artId = parseInt(docSnap.id.replace('artwork_', ''), 10);
+                    const art = window.ARTWORKS_DATA.find(a => a.id === artId);
+                    if (art) {
+                        if (data.price) art.price = data.price;
+                        if (data.customImg) {
+                            art.customImg = data.customImg;
+                            saveLocalArtwork(art.id, data.customImg, data.price);
+                            if (window.applyCustomImageToMesh) {
+                                window.applyCustomImageToMesh(art.id, data.customImg);
+                            }
+                        }
+                    }
+                });
+            } catch (e) {
+                console.warn("Cloud sync read notice:", e);
+            }
+        }
+        window.fetchCloudArtworksData = fetchCloudArtworksData;
+
+        // Safely parse Firebase config if provided
+        try {
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                let firebaseConfig = null;
+                if (typeof __firebase_config === 'string') {
+                    const trimmed = __firebase_config.trim();
+                    if (trimmed.startsWith('{')) {
+                        firebaseConfig = JSON.parse(trimmed);
+                    }
+                } else if (typeof __firebase_config === 'object') {
+                    firebaseConfig = __firebase_config;
+                }
+
+                if (firebaseConfig) {
+                    const app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+
+                    const initAuth = async () => {
+                        try {
+                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                                const cred = await signInWithCustomToken(auth, __initial_auth_token);
+                                currentUser = cred.user;
+                            } else {
+                                const cred = await signInAnonymously(auth);
+                                currentUser = cred.user;
+                            }
+                        } catch (err) {
+                            const cred = await signInAnonymously(auth);
+                            currentUser = cred.user;
+                        }
+                        await fetchCloudArtworksData();
+                        listenToCloudUpdates();
+                    };
+                    initAuth();
+                }
+            }
+        } catch (e) {
+            console.warn("Firebase initialization skipped:", e);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast-notification');
+            const toastMsg = document.getElementById('toast-message');
+            if (!toast || !toastMsg) return;
+            toastMsg.innerText = msg;
+            toast.classList.remove('translate-y-[-20px]', 'opacity-0', 'pointer-events-none');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-[-20px]', 'opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+        window.showToast = showToast;
+
+        function listenToCloudUpdates() {
+            if (!db || !currentUser || !window.ARTWORKS_DATA) return;
+            try {
+                const artworksCol = collection(db, 'artifacts', appId, 'public', 'data', 'artworks');
+                onSnapshot(artworksCol, (snapshot) => {
+                    snapshot.forEach((docSnap) => {
+                        const data = docSnap.data();
+                        const docId = docSnap.id;
+                        const artId = parseInt(docId.replace('artwork_', ''), 10);
+                        const art = window.ARTWORKS_DATA.find(a => a.id === artId);
+                        if (art) {
+                            let updated = false;
+                            if (data.price && data.price !== art.price) {
+                                art.price = data.price;
+                                updated = true;
+                            }
+                            if (data.customImg && data.customImg !== art.customImg) {
+                                art.customImg = data.customImg;
+                                updated = true;
+                                if (window.applyCustomImageToMesh) {
+                                    window.applyCustomImageToMesh(artId, data.customImg);
+                                }
+                            }
+                            if (updated) {
+                                saveLocalArtwork(artId, art.customImg, art.price);
+                                if (window.activeArtworkIndex === artId - 1 && window.updateDrawerData) {
+                                    window.updateDrawerData(art);
+                                }
+                            }
+                        }
+                    });
+                });
+            } catch (e) {}
+        }
+
+        async function saveArtworkToCloud(artId, customImgBase64, priceVal) {
+            saveLocalArtwork(artId, customImgBase64, priceVal);
+
+            if (!db || !currentUser) {
+                showToast("Saved to Local Browser Storage 💾");
+                return;
+            }
+            try {
+                const artDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'artworks', `artwork_${artId}`);
+                const payload = { updatedAt: new Date().toISOString() };
+                if (customImgBase64) payload.customImg = customImgBase64;
+                if (priceVal) payload.price = priceVal;
+
+                await setDoc(artDocRef, payload, { merge: true });
+                showToast("Saved to Cloud & Local Storage ☁️");
+            } catch (err) {
+                showToast("Saved to Local Browser Storage 💾");
+            }
+        }
+
+        window.saveArtworkToCloud = saveArtworkToCloud;
+    </script>
+
+    <script>
+        /* START_ARTWORKS_DATA */
+        const ARTWORKS_DATA = [
+            {
+                id: 1,
+                titleZh: "药师佛",
+                titleEn: "Medicine Buddha",
+                medium: "Watercolour on Satin silk / 绢本水彩",
+                size: "91.44 × 152.4 cm",
+                year: "Sept 2023",
+                price: "N.F.S",
+                bgColor: "#0f254e",
+                auraColor: "#38bdf8",
+                iconSymbol: "🧪",
+                remarksZh: "药师佛身呈蓝色（琉璃色），象征疗愈身心疾苦。左手托盛疗愈甘露之药钵，救度众生脱离贪、嗔、痴三毒；右手执诃子（吉祥花枝），能治一切病苦。",
+                remarksEn: "Depicted in blue (Lapis Lazuli color), representing healing of mental/physical illnesses. Left hand holds a bowl (patra) with healing composition against 3 mental obscurations (Attachment, Hatred, Ignorance). Right hand holds a stem of myrobalan (Haritaki).",
+                customImg: null
+            },
+            {
+                id: 2,
+                titleZh: "释迦牟尼佛。云水之间",
+                titleEn: "Buddha Shakyamuni - Between Clouds and Water",
+                medium: "Ink and Colour on Rice Paper / 宣纸水墨设色",
+                size: "68.58 × 81.28 cm",
+                year: "Oct 2024",
+                price: "RM 6,000",
+                bgColor: "#4a1e0b",
+                auraColor: "#f59e0b",
+                iconSymbol: "☸",
+                remarksZh: "右手：触地印（降魔印），召唤大地为自己的修行作证，降伏魔军，象征破除烦恼魔障、证悟真实。左手：禅定印，托钵盂盛甘露，代表禅定清净、福慧圆满与慈悲摄受。",
+                remarksEn: "Right hand in Earth-Touching mudra (Bhumisparsha), calling the earth to witness enlightenment and subduing Mara. Left hand in Dhyana mudra holding a nectar bowl, symbolizing pure meditation, fulfillment of merit and wisdom, and compassionate reception of all beings.",
+                customImg: null
+            },
+            {
+                id: 3,
+                titleZh: "释迦牟尼佛。佛光普照",
+                titleEn: "Radiance of the Buddha Shakyamuni",
+                medium: "Ink and Colour on Rice Paper / 宣纸水墨设色",
+                size: "58.42 × 81.28 cm",
+                year: "Sept 2024",
+                price: "RM 6,000",
+                bgColor: "#58122a",
+                auraColor: "#fb7185",
+                iconSymbol: "🪷",
+                remarksZh: "释迦牟尼佛佛光普照，以智慧与慈悲光明遍照十方世界。",
+                remarksEn: "Radiance of Buddha Shakyamuni, illuminating all realms with wisdom and compassion.",
+                customImg: null
+            },
+            {
+                id: 4,
+                titleZh: "水月观音菩萨",
+                titleEn: "Bodhisattva Avalokiteshvara",
+                medium: "Ink and Colour on Silk / 绢本水墨设色",
+                size: "83.82 × 83.82 cm",
+                year: "Mar 2025",
+                price: "RM 10,000",
+                bgColor: "#043f33",
+                auraColor: "#34d399",
+                iconSymbol: "🏺",
+                remarksZh: "启发于中国北京法海寺著名壁画《水月观音》。作者以个人风格重新演绎，创作出较小尺寸的精致作品。",
+                remarksEn: "Inspired by the famous mural painting in Fa Hai Temple (法海寺), China. Reinterpreted and painted in a smaller version/personal style.",
+                customImg: null
+            },
+            {
+                id: 5,
+                titleZh: "文殊菩萨。般若之光",
+                titleEn: "Manjushri - Light of Prajna",
+                medium: "Ink and Colour on Rice Paper / 宣纸水墨设色",
+                size: "68.58 × 76.20 cm",
+                year: "Oct 2025",
+                price: "RM 6,800",
+                bgColor: "#111c38",
+                auraColor: "#818cf8",
+                iconSymbol: "⚔",
+                remarksZh: "文殊菩萨为智慧之化身。右手持般若慧剑，断除一切无明、烦恼与执着；左手持莲花，花上安放《般若经》，象征智慧之宝藏。",
+                remarksEn: "Bodhisattva of Wisdom. Right hand holds the Sword of Wisdom, cutting through ignorance, afflictions, and deluded attachments. Left hand holds a lotus resting the Prajñā‑sūtra (Perfection of Wisdom Sutra) symbolizing the treasure of wisdom.",
+                customImg: null
+            },
+            {
+                id: 6,
+                titleZh: "文殊菩萨。慧剑破无明",
+                titleEn: "Manjushri - Wisdom Sword dispels Ignorance",
+                medium: "Ink and Colour on Silk / 绢本水墨设色",
+                size: "68.58 × 88.90 cm",
+                year: "June 2025",
+                price: "RM 8,800",
+                bgColor: "#4d2208",
+                auraColor: "#fbbf24",
+                iconSymbol: "🗡",
+                remarksZh: "文殊菩萨为智慧之化身。手持超越性智慧之慧剑，以大智慧与洞察力照亮修行与学习之路，破除一切无明黑暗。",
+                remarksEn: "Embodiment of wisdom; holds the sword of transcendent wisdom and insight to illuminate the way of learning and overcome ignorance.",
+                customImg: null
+            },
+            {
+                id: 7,
+                titleZh: "绿度母。慈度十方",
+                titleEn: "Green Tara - Infinite Reach of Compassion",
+                medium: "Ink and Colour on Rice Paper Card / 宣纸硬卡水墨设色",
+                size: "38 × 38 cm",
+                year: "June 2026",
+                price: "RM 3,500",
+                bgColor: "#1e1b4b",
+                auraColor: "#a78bfa",
+                iconSymbol: "🌿",
+                remarksZh: "观世音菩萨的化身，又称救八难度母。身色翠绿代表诸佛事业与希望，护佑女性、孩童，消灾解厄、化解障碍，救度迅速。",
+                remarksEn: "Emanation of Avalokiteshvara, also known as the Tara who saves from eight kinds of dangers. Green color represents the enlightened activities of all Buddhas and hope, protecting women and children, dispelling disasters, and bringing swift deliverance.",
+                customImg: null
+            },
+            {
+                id: 8,
+                titleZh: "绿度母。慈心如莲",
+                titleEn: "Green Tara - Compassionate Heart blossoms like Lotus",
+                medium: "Ink and Colour on Rice Paper / 宣纸水墨设色",
+                size: "33 × 49.5 cm",
+                year: "Aug 2026",
+                price: "RM 3,800",
+                bgColor: "#023e2d",
+                auraColor: "#4ade80",
+                iconSymbol: "🪷",
+                remarksZh: "绿度母以慈悲为愿，以无畏为行，守护众生于苦难之中。愿慈心如莲，清净而不失温柔；愿一念慈悲，遍及十方。",
+                remarksEn: "Guided by compassion and courage to protect all living beings from suffering. May a compassionate heart be as pure and gentle as a lotus, illuminating all directions.",
+                customImg: null
+            },
+            {
+                id: 9,
+                titleZh: "四臂观音",
+                titleEn: "Four-armed Avalokitesvara Chenrezig",
+                medium: "Ink and Colour on Rice Paper / 宣纸水墨设色",
+                size: "66.5 × 90 cm",
+                year: "Sept 2026",
+                price: "RM 8,800",
+                bgColor: "#4a124c",
+                auraColor: "#f472b6",
+                iconSymbol: "🤲",
+                remarksZh: "四臂观音（藏音：观音菩萨），身色洁白象征清净本性。四臂代表四无量心（慈、悲、喜、舍）。中间双手合十胸前抱摩尼宝珠；右上角手持水晶念珠，左上角手持白莲花。心咒：六字大明咒（嗡嘛呢叭咪吽）。",
+                remarksEn: "White-bodied, symbolizing pure nature. Four arms represent the Four Immeasurable Minds (loving-kindness, compassion, joy, equanimity). Central hands hold a mani jewel; upper right holds a crystal rosary; upper left holds a white lotus. Mantra: Om Mani Padme Hum.",
+                customImg: null
+            },
+            {
+                id: 10,
+                titleZh: "四臂观自在。怀善护念",
+                titleEn: "Four-armed Avalokitesvara Chenrezig",
+                medium: "Ink and Colour on Silk Card / 绢本硬卡水墨设色",
+                size: "26 × 36 cm",
+                year: "June 2026",
+                price: "RM 3,000",
+                bgColor: "#5c0821",
+                auraColor: "#fda4af",
+                iconSymbol: "✨",
+                remarksZh: "怀善护念，心怀慈悲，守护每一份善念。中间双手合十代表至诚不二的菩提心；右手持念珠，时时不忘救度众生；左手持莲花，清净无染，慈悲开出清净之花。",
+                remarksEn: "Cherishing goodness and compassion to guard every good thought. Central hands joined in prayer represent unshakeable Bodhicitta; right hand holds rosary to save all beings; left hand holds lotus symbolizing purity and compassion.",
+                customImg: null
+            },
+            {
+                id: 11,
+                titleZh: "彩光 纳福系列。琉璃净光药师佛",
+                titleEn: "Colourful Blessings Series - Radiance of Medicine Buddha",
+                medium: "Cinnabar and Colour on Rice Paper Card / 宣纸硬卡朱砂彩绘",
+                size: "38 × 38 cm",
+                year: "Sept 2026",
+                price: "RM 5,000",
+                bgColor: "#0a361c",
+                auraColor: "#a7f3d0",
+                iconSymbol: "🌟",
+                remarksZh: "《彩光纳福》灵感源于尼泊尔之旅，将蒙受仁波切赐福时内心的暖意与鲜活色彩转译为视觉艺术。药师佛身呈幽蓝琉璃之色，右手执诃子吉祥花枝，左手托甘露药钵，身后彩纹如霞光云海，祈愿消诸疾苦，身心安康。",
+                remarksEn: "Inspired by a spiritual journey to Nepal, translating divine blessings into radiant colors and visual art. Medicine Buddha's body is deep lapis lazuli blue, holding a myrobalan sprig and nectar bowl, set against clouds of flowing light to bring health and peace.",
+                customImg: null
+            },
+            {
+                id: 12,
+                titleZh: "彩光 纳福系列。四臂观音",
+                titleEn: "Colourful Blessings Series - Four-armed Avalokitesvara Chenrezig",
+                medium: "Cinnabar and Colour on Rice Paper Card / 宣纸硬卡朱砂彩绘",
+                size: "38 × 38 cm",
+                year: "Sept 2026",
+                price: "RM 5,000",
+                bgColor: "#022c22",
+                auraColor: "#2dd4bf",
+                iconSymbol: "💫",
+                remarksZh: "《彩光纳福》灵感源于尼泊尔之旅。藏传四臂观音身色洁白象征清净本性，四臂代表慈、悲、喜、舍四无量心，结合充满能量的缤纷色彩，呈现宁静与福佑。",
+                remarksEn: "Inspired by a spiritual journey to Nepal. White-bodied Tibetan Chenrezig representing the Four Immeasurable Minds (Loving-kindness, Compassion, Joy, Equanimity), expressed through vivid color and sacred serenity.",
+                customImg: null
+            },
+            {
+                id: 13,
+                titleZh: "朱砂线描·朱绘琉璃",
+                titleEn: "Medicine Buddha",
+                medium: "Cinnabar Line Drawing / 朱砂线描",
+                size: "41 × 46 cm",
+                year: "July 2026",
+                price: "RM 1,800",
+                bgColor: "#1e1b4b",
+                auraColor: "#c084fc",
+                iconSymbol: "🖋",
+                remarksZh: "本幅为朱砂线描药师琉璃光如来。依唐卡仪轨勾勒，右手持药枝，左手捧甘露宝钵。不施五彩，独以朱线塑出庄严柔和之态；繁彩尽去，留清净本相，寄托疗愈身心、平安无虞之祈愿。",
+                remarksEn: "Medicine Buddha drawn with cinnabar red lines only according to Thangka iconographic rules. Holding a medicinal sprig and nectar bowl, seated upon a lotus pedestal. All rich colors omitted to reveal pure essence and blessings of healing.",
+                customImg: null
+            },
+            {
+                id: 14,
+                titleZh: "墨线白描·慈度青莲",
+                titleEn: "Mercy Tara Upon Lotus",
+                medium: "Ink Line Sketch / 墨线白描",
+                size: "30 × 42 cm",
+                year: "July 2026",
+                price: "RM 1,200",
+                bgColor: "#172554",
+                auraColor: "#60a5fa",
+                iconSymbol: "🖌",
+                remarksZh: "自在坐于莲台，右手施无畏予愿印，垂施接引；左手拈莲花，清净无尘。舍去重彩，仅以墨线勾勒婉转衣饰与宝冠璎珞，寓意护佑平安、消解忧惧，予人安宁与勇气。",
+                remarksEn: "Seated comfortably on a lotus throne, right hand in Abhaya/Varada mudra granting protection and fulfilling wishes; left hand holding a lotus. Rendered solely in ink lines to convey gentle compassion for protection and peace.",
+                customImg: null
+            },
+            {
+                id: 15,
+                titleZh: "水月观音菩萨",
+                titleEn: "Bodhisattva Avalokiteshvara",
+                medium: "Ink and Colour on Rice Paper / 宣纸水墨设色",
+                size: "58 × 71.5 cm",
+                year: "Sept 2026",
+                price: "N.F.S",
+                bgColor: "#042f2e",
+                auraColor: "#99f6e4",
+                iconSymbol: "🌙",
+                remarksZh: "水月观音菩萨法相慈悲，如月中水，清净空灵，普度有情。",
+                remarksEn: "Bodhisattva Avalokiteshvara reflecting like moon in water, serene and compassionate.",
+                customImg: null
+            }
+        ];
+        window.ARTWORKS_DATA = ARTWORKS_DATA;
+        /* END_ARTWORKS_DATA */
+
+        let scene, camera, renderer;
+        let artworkMeshes = [];
+        let haloLights = [];
+        let particlesMesh = null;
+        let activeArtworkIndex = 0;
+        let isZoomed = false;
+        let ownerMode = false; // Locked by default for security
+
+        const defaultCamPos = { x: 0, y: 1.6, z: 11 };
+        const defaultCamTarget = { x: 0, y: 1.6, z: 0 };
+        let currentCamPos = { ...defaultCamPos };
+        let currentCamTarget = { ...defaultCamTarget };
+        let targetCamPos = { ...defaultCamPos };
+        let targetCamTarget = { ...defaultCamTarget };
+
+        const DARK_BLUE_BG = '#0A0F1D';
+
+        function resizeArtworkFrame(group, imgWidth, imgHeight) {
+            if (!group || !imgWidth || !imgHeight) return;
+            const aspect = imgWidth / imgHeight;
+            const panelHeight = 3.4;
+            const panelWidth = panelHeight * aspect;
+
+            const frameWidth = panelWidth + 0.28;
+            const frameHeight = panelHeight + 0.28;
+            const goldWidth = panelWidth + 0.08;
+            const goldHeight = panelHeight + 0.08;
+
+            const frameMesh = group.children[0];
+            const goldLipMesh = group.children[1];
+            const panelMesh = group.children[2];
+
+            if (frameMesh) {
+                frameMesh.geometry.dispose();
+                frameMesh.geometry = new THREE.BoxGeometry(frameWidth, frameHeight, 0.10);
+            }
+            if (goldLipMesh) {
+                goldLipMesh.geometry.dispose();
+                goldLipMesh.geometry = new THREE.BoxGeometry(goldWidth, goldHeight, 0.02);
+            }
+            if (panelMesh) {
+                panelMesh.geometry.dispose();
+                panelMesh.geometry = new THREE.PlaneGeometry(panelWidth, panelHeight);
+            }
+        }
+
+        function createArtworkCanvasTexture(art) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 1536;
+            const ctx = canvas.getContext('2d');
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.encoding = THREE.sRGBEncoding;
+            texture.generateMipmaps = true;
+            texture.minFilter = THREE.LinearMipmapLinearFilter;
+
+            const renderCanvasContent = (imgObj) => {
+                if (imgObj) {
+                    canvas.width = imgObj.width > 0 ? Math.min(Math.max(imgObj.width, 512), 2048) : 1024;
+                    canvas.height = imgObj.height > 0 ? Math.round(canvas.width / (imgObj.width / imgObj.height)) : 1536;
+                    ctx.fillStyle = DARK_BLUE_BG;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(imgObj, 0, 0, canvas.width, canvas.height);
+                } else {
+                    ctx.fillStyle = DARK_BLUE_BG;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    const grad = ctx.createRadialGradient(512, 600, 50, 512, 600, 480);
+                    grad.addColorStop(0, art.auraColor || '#f59e0b');
+                    grad.addColorStop(0.5, 'rgba(217, 119, 6, 0.3)');
+                    grad.addColorStop(1, 'transparent');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    ctx.beginPath();
+                    ctx.arc(512, 540, 220, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.lineWidth = 6;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#ffd700';
+                    ctx.font = 'bold 130px Georgia, serif';
+                    ctx.textAlign = 'center';
+                    ctx.shadowColor = '#ffaa00';
+                    ctx.shadowBlur = 20;
+                    ctx.fillText(art.iconSymbol || '🪷', 512, 575);
+                    ctx.shadowBlur = 0;
+
+                    ctx.fillStyle = '#fff9e6';
+                    ctx.font = 'bold 54px Georgia, serif';
+                    ctx.fillText(art.titleZh, 512, 980);
+
+                    ctx.fillStyle = '#fde68a';
+                    ctx.font = '32px Inter, sans-serif';
+                    ctx.fillText(art.titleEn, 512, 1040);
+
+                    ctx.fillStyle = 'rgba(255, 215, 0, 0.7)';
+                    ctx.font = '24px Inter, sans-serif';
+                    ctx.fillText('No. ' + art.id + ' • 慈光艺术展', 512, 1110);
+                }
+                texture.needsUpdate = true;
+            };
+
+            renderCanvasContent(null);
+
+            if (art.customImg) {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    renderCanvasContent(img);
+                    const group = artworkMeshes[art.id - 1];
+                    if (group) resizeArtworkFrame(group, img.width, img.height);
+                };
+                img.src = art.customImg;
+                if (img.complete) img.onload();
+            }
+
+            return texture;
+        }
+
+        window.applyCustomImageToMesh = function(artId, imgData) {
+            const art = ARTWORKS_DATA.find(a => a.id === artId);
+            if (!art) return;
+            art.customImg = imgData;
+            
+            const group = artworkMeshes[artId - 1];
+            if (group) {
+                const panelMesh = group.userData.panelMesh;
+                if (panelMesh) {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => {
+                        const targetW = img.width > 0 ? Math.min(Math.max(img.width, 512), 2048) : 1024;
+                        const targetH = Math.round(targetW / (img.width / img.height));
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = targetW;
+                        canvas.height = targetH;
+                        const ctx = canvas.getContext('2d');
+                        
+                        ctx.fillStyle = DARK_BLUE_BG;
+                        ctx.fillRect(0, 0, targetW, targetH);
+                        ctx.drawImage(img, 0, 0, targetW, targetH);
+                        
+                        if (panelMesh.material.map) {
+                            panelMesh.material.map.dispose();
+                        }
+                        const texture = new THREE.CanvasTexture(canvas);
+                        texture.encoding = THREE.sRGBEncoding;
+                        texture.generateMipmaps = true;
+                        texture.minFilter = THREE.LinearMipmapLinearFilter;
+                        texture.needsUpdate = true;
+
+                        panelMesh.material.map = texture;
+                        panelMesh.material.needsUpdate = true;
+
+                        resizeArtworkFrame(group, img.width, img.height);
+                    };
+                    img.src = imgData;
+                    if (img.complete) img.onload();
+                }
+            }
+
+            if (activeArtworkIndex === artId - 1) {
+                const drawerImg = document.getElementById('drawer-img');
+                if (drawerImg) drawerImg.src = imgData;
+            }
+
+            if (typeof renderCatalogGrid === 'function') {
+                renderCatalogGrid();
+            }
+        };
+
+        function createParticleSystem() {
+            const particleCount = 200;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 60;
+                positions[i + 1] = Math.random() * 8 - 1;
+                positions[i + 2] = (Math.random() - 0.5) * 15;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            const pMaterial = new THREE.PointsMaterial({
+                color: 0xffd700,
+                size: 0.08,
+                transparent: true,
+                opacity: 0.6,
+                blending: THREE.AdditiveBlending
+            });
+
+            particlesMesh = new THREE.Points(geometry, pMaterial);
+            scene.add(particlesMesh);
+        }
+
+        let ambientLight, directionalLight;
+
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+            if (!container) return;
+            
+            // Ensure container is clear of residual canvas elements
+            container.innerHTML = '';
+            artworkMeshes = [];
+            haloLights = [];
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050812);
+            scene.fog = new THREE.FogExp2(0x050812, 0.025);
+
+            const initialFov = window.innerWidth < 768 ? 58 : 45;
+            camera = new THREE.PerspectiveCamera(initialFov, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(defaultCamPos.x, defaultCamPos.y, defaultCamPos.z);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            ambientLight = new THREE.AmbientLight(0xffffff, 1.25);
+            scene.add(ambientLight);
+
+            directionalLight = new THREE.DirectionalLight(0xffffff, 0.15);
+            directionalLight.position.set(0, 1.6, 10);
+            scene.add(directionalLight);
+
+            const floorGeo = new THREE.PlaneGeometry(80, 40);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5, metalness: 0.1 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            const wallGeo = new THREE.PlaneGeometry(80, 20);
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x090e1a, roughness: 0.9 });
+            const wall = new THREE.Mesh(wallGeo, wallMat);
+            wall.position.set(0, 8, -3.1);
+            wall.receiveShadow = true;
+            scene.add(wall);
+
+            createParticleSystem();
+
+            const spacing = 3.6;
+            const startX = -((15 - 1) * spacing) / 2;
+
+            ARTWORKS_DATA.forEach((art, idx) => {
+                const group = new THREE.Group();
+                const xPos = startX + idx * spacing;
+                group.position.set(xPos, 1.6, 0);
+                group.userData = { id: art.id, index: idx };
+
+                const frameMat = new THREE.MeshStandardMaterial({ color: 0x241208, roughness: 0.8, metalness: 0.05 });
+                const frameGeo = new THREE.BoxGeometry(2.68, 3.68, 0.10);
+                const frameMesh = new THREE.Mesh(frameGeo, frameMat);
+                frameMesh.position.z = 0.0;
+                frameMesh.userData = { id: art.id, index: idx };
+                group.add(frameMesh);
+
+                const goldMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.6, metalness: 0.3 });
+                const goldLipGeo = new THREE.BoxGeometry(2.48, 3.48, 0.02);
+                const goldLipMesh = new THREE.Mesh(goldLipGeo, goldMat);
+                goldLipMesh.position.z = 0.04;
+                goldLipMesh.userData = { id: art.id, index: idx };
+                group.add(goldLipMesh);
+
+                const canvasTex = createArtworkCanvasTexture(art);
+                const canvasMat = new THREE.MeshBasicMaterial({ map: canvasTex });
+                const panelGeo = new THREE.PlaneGeometry(2.4, 3.4);
+                const panelMesh = new THREE.Mesh(panelGeo, canvasMat);
+                panelMesh.position.z = 0.06;
+                panelMesh.userData = { id: art.id, index: idx };
+                group.add(panelMesh);
+
+                group.userData.panelMesh = panelMesh;
+                group.userData.canvasMat = canvasMat;
+
+                scene.add(group);
+                artworkMeshes.push(group);
+
+                const spotLight = new THREE.PointLight(art.auraColor || 0xffd700, 0.6, 6);
+                spotLight.position.set(xPos, 1.6, 0.5);
+                scene.add(spotLight);
+                haloLights.push(spotLight);
+            });
+
+            setupInteractions();
+            window.addEventListener('resize', onWindowResize);
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            camera.position.x += (targetCamPos.x - camera.position.x) * 0.08;
+            camera.position.y += (targetCamPos.y - camera.position.y) * 0.08;
+            camera.position.z += (targetCamPos.z - camera.position.z) * 0.08;
+
+            if (particlesMesh) {
+                particlesMesh.rotation.y += 0.0005;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            const isMobile = window.innerWidth < 768;
+            camera.fov = isMobile ? 58 : 45;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function updateDrawerData(art) {
+            if (!art) return;
+            const drawerArtworkNo = document.getElementById('drawer-artwork-no');
+            const drawerTitleZh = document.getElementById('drawer-title-zh');
+            const drawerTitleEn = document.getElementById('drawer-title-en');
+            const drawerImg = document.getElementById('drawer-img');
+            const priceBadge = document.getElementById('price-badge');
+            const drawerMedium = document.getElementById('drawer-medium');
+            const drawerSize = document.getElementById('drawer-size');
+            const drawerYear = document.getElementById('drawer-year');
+            const drawerRemarksZh = document.getElementById('drawer-remarks-zh');
+            const drawerRemarksEn = document.getElementById('drawer-remarks-en');
+            const ownerFrameId = document.getElementById('owner-frame-id');
+            const ownerPriceInput = document.getElementById('owner-price-input');
+
+            if (drawerArtworkNo) drawerArtworkNo.innerText = `NO. ${art.id}`;
+            if (drawerTitleZh) drawerTitleZh.innerText = art.titleZh;
+            if (drawerTitleEn) drawerTitleEn.innerText = art.titleEn;
+            if (drawerImg) {
+                drawerImg.src = art.customImg || `https://placehold.co/600x800/0f254e/ffd700?text=${encodeURIComponent(art.titleEn)}`;
+            }
+            if (priceBadge) priceBadge.innerText = art.price || 'Inquire';
+            if (drawerMedium) drawerMedium.innerText = art.medium;
+            if (drawerSize) drawerSize.innerText = art.size;
+            if (drawerYear) drawerYear.innerText = art.year;
+            if (drawerRemarksZh) drawerRemarksZh.innerText = art.remarksZh || '--';
+            if (drawerRemarksEn) drawerRemarksEn.innerText = art.remarksEn || '--';
+            if (ownerFrameId) ownerFrameId.innerText = art.id;
+            if (ownerPriceInput) ownerPriceInput.value = art.price || '';
+        }
+
+        function openDrawer(art) {
+            if (!art) return;
+            updateDrawerData(art);
+            const drawer = document.getElementById('artwork-drawer');
+            if (drawer) {
+                drawer.classList.remove('translate-x-full');
+            }
+        }
+
+        function closeDrawer() {
+            const drawer = document.getElementById('artwork-drawer');
+            if (drawer) {
+                drawer.classList.add('translate-x-full');
+            }
+        }
+
+        window.updateDrawerData = updateDrawerData;
+        window.openDrawer = openDrawer;
+        window.closeDrawer = closeDrawer;
+
+        function focusOnArtwork(idx) {
+            if (idx < 0 || idx >= ARTWORKS_DATA.length) return;
+            activeArtworkIndex = idx;
+            const art = ARTWORKS_DATA[idx];
+            const mesh = artworkMeshes[idx];
+
+            isZoomed = true;
+            const zoomDist = window.innerWidth < 768 ? 4.2 : 3.8;
+            targetCamPos = { x: mesh.position.x, y: mesh.position.y, z: mesh.position.z + zoomDist };
+            targetCamTarget = { x: mesh.position.x, y: mesh.position.y, z: mesh.position.z };
+
+            const banner = document.getElementById('title-banner-layer');
+            if (banner) {
+                banner.classList.add('opacity-0', 'pointer-events-none', '-translate-y-6');
+                banner.classList.remove('opacity-100', 'translate-y-0');
+            }
+
+            updateQuickNav(art, idx);
+        }
+
+        function resetCameraView() {
+            isZoomed = false;
+            const activeMesh = artworkMeshes[activeArtworkIndex];
+            const currentX = activeMesh ? activeMesh.position.x : 0;
+
+            targetCamPos = { x: currentX, y: defaultCamPos.y, z: defaultCamPos.z };
+            targetCamTarget = { x: currentX, y: defaultCamTarget.y, z: defaultCamTarget.z };
+
+            const banner = document.getElementById('title-banner-layer');
+            if (banner) {
+                banner.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-6');
+                banner.classList.add('opacity-100', 'translate-y-0');
+            }
+
+            closeDrawer();
+        }
+
+        function updateQuickNav(art, idx) {
+            document.getElementById('quick-art-title').innerText = `${art.titleEn} / ${art.titleZh}`;
+            document.getElementById('quick-art-idx').innerText = `ARTWORK ${idx + 1} / 15 • CLICK TO DETAILS`;
+        }
+
+        function setupInteractions() {
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            
+            let clickStartTime = 0;
+            let isDragging = false;
+            let startPointerX = 0;
+            let startPointerY = 0;
+            let dragCamStartX = 0;
+            let totalDragDist = 0;
+            const DRAG_THRESHOLD = 12;
+
+            window.addEventListener('pointerdown', (e) => {
+                if (e.target.closest('#artwork-drawer') || e.target.closest('header') || e.target.closest('#catalog-modal') || e.target.closest('#lightbox-modal') || e.target.closest('#inquiry-modal') || e.target.closest('.fixed')) {
+                    return;
+                }
+                clickStartTime = Date.now();
+                isDragging = true;
+                totalDragDist = 0;
+                startPointerX = e.clientX;
+                startPointerY = e.clientY;
+                dragCamStartX = targetCamPos.x;
+            });
+
+            window.addEventListener('pointermove', (e) => {
+                if (!isDragging) return;
+                const deltaX = e.clientX - startPointerX;
+                const deltaY = e.clientY - startPointerY;
+                totalDragDist = Math.hypot(deltaX, deltaY);
+
+                if (totalDragDist > DRAG_THRESHOLD) {
+                    const sensitivity = window.innerWidth < 768 ? 0.015 : 0.012;
+                    const spacing = 3.6;
+                    const startX = -((15 - 1) * spacing) / 2;
+                    const endX = startX + (15 - 1) * spacing;
+
+                    let newX = dragCamStartX - deltaX * sensitivity;
+                    newX = Math.max(startX - 1.2, Math.min(endX + 1.2, newX));
+                    targetCamPos.x = newX;
+                    targetCamTarget.x = newX;
+
+                    let closestIdx = Math.round((newX - startX) / spacing);
+                    closestIdx = Math.max(0, Math.min(ARTWORKS_DATA.length - 1, closestIdx));
+                    if (closestIdx !== activeArtworkIndex) {
+                        activeArtworkIndex = closestIdx;
+                        updateQuickNav(ARTWORKS_DATA[activeArtworkIndex], activeArtworkIndex);
+                    }
+                }
+            });
+
+            window.addEventListener('pointerup', (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+
+                if (e.target.closest('#artwork-drawer') || e.target.closest('header') || e.target.closest('#catalog-modal') || e.target.closest('#lightbox-modal') || e.target.closest('#inquiry-modal') || e.target.closest('.fixed')) {
+                    return;
+                }
+
+                if (totalDragDist > DRAG_THRESHOLD) {
+                    const spacing = 3.6;
+                    const startX = -((15 - 1) * spacing) / 2;
+                    let closestIdx = Math.round((targetCamPos.x - startX) / spacing);
+                    closestIdx = Math.max(0, Math.min(ARTWORKS_DATA.length - 1, closestIdx));
+                    activeArtworkIndex = closestIdx;
+                    
+                    const meshX = artworkMeshes[activeArtworkIndex].position.x;
+                    targetCamPos.x = meshX;
+                    targetCamTarget.x = meshX;
+                    updateQuickNav(ARTWORKS_DATA[activeArtworkIndex], activeArtworkIndex);
+                    return;
+                }
+
+                if (Date.now() - clickStartTime > 300) return;
+
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(scene.children, true);
+
+                if (intersects.length > 0) {
+                    let obj = intersects[0].object;
+                    while (obj.parent && (obj.userData.index === undefined)) {
+                        obj = obj.parent;
+                    }
+                    if (obj.userData && obj.userData.index !== undefined) {
+                        const idx = obj.userData.index;
+                        const art = ARTWORKS_DATA[idx];
+
+                        if (!isZoomed || activeArtworkIndex !== idx) {
+                            focusOnArtwork(idx);
+                        } else {
+                            openDrawer(art);
+                        }
+                        return;
+                    }
+                }
+
+                if (isZoomed) {
+                    resetCameraView();
+                }
+            });
+
+            // UI Buttons Wiring
+            document.getElementById('quick-bar-trigger')?.addEventListener('click', () => {
+                const art = ARTWORKS_DATA[activeArtworkIndex];
+                if (!isZoomed) focusOnArtwork(activeArtworkIndex);
+                openDrawer(art);
+            });
+
+            document.getElementById('prev-art-btn')?.addEventListener('click', () => {
+                let newIdx = activeArtworkIndex - 1;
+                if (newIdx < 0) newIdx = ARTWORKS_DATA.length - 1;
+                focusOnArtwork(newIdx);
+                const drawer = document.getElementById('artwork-drawer');
+                if (drawer && !drawer.classList.contains('translate-x-full')) {
+                    openDrawer(ARTWORKS_DATA[newIdx]);
+                }
+            });
+
+            document.getElementById('next-art-btn')?.addEventListener('click', () => {
+                let newIdx = (activeArtworkIndex + 1) % ARTWORKS_DATA.length;
+                focusOnArtwork(newIdx);
+                const drawer = document.getElementById('artwork-drawer');
+                if (drawer && !drawer.classList.contains('translate-x-full')) {
+                    openDrawer(ARTWORKS_DATA[newIdx]);
+                }
+            });
+
+            document.getElementById('reset-cam-btn')?.addEventListener('click', () => {
+                resetCameraView();
+            });
+
+            document.getElementById('close-drawer-btn')?.addEventListener('click', () => {
+                closeDrawer();
+            });
+
+            const lightboxModal = document.getElementById('lightbox-modal');
+            document.getElementById('open-lightbox-trigger')?.addEventListener('click', () => {
+                const art = ARTWORKS_DATA[activeArtworkIndex];
+                const lightboxImg = document.getElementById('lightbox-img');
+                const lightboxTitle = document.getElementById('lightbox-title');
+                const lightboxSubtitle = document.getElementById('lightbox-subtitle');
+
+                if (lightboxImg) lightboxImg.src = art.customImg || `https://placehold.co/800x1200/0f254e/ffd700?text=${encodeURIComponent(art.titleEn)}`;
+                if (lightboxTitle) lightboxTitle.innerText = `${art.titleZh} (${art.titleEn})`;
+                if (lightboxSubtitle) lightboxSubtitle.innerText = `${art.medium} • ${art.size}`;
+
+                lightboxModal?.classList.remove('hidden');
+            });
+
+            document.getElementById('close-lightbox-btn')?.addEventListener('click', () => {
+                lightboxModal?.classList.add('hidden');
+            });
+
+            const catalogModal = document.getElementById('catalog-modal');
+            document.getElementById('toggle-list-btn')?.addEventListener('click', () => {
+                renderCatalogGrid('all');
+                catalogModal?.classList.remove('hidden');
+            });
+            document.getElementById('close-catalog-btn')?.addEventListener('click', () => {
+                catalogModal?.classList.add('hidden');
+            });
+
+            const filterTabs = document.querySelectorAll('#catalog-filter-tabs button');
+            filterTabs.forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    filterTabs.forEach(t => t.className = 'px-2.5 py-1 rounded-lg hover:text-amber-900 transition');
+                    e.target.className = 'px-2.5 py-1 rounded-lg bg-white text-amber-900 shadow-sm transition';
+                    const filter = e.target.getAttribute('data-filter');
+                    renderCatalogGrid(filter);
+                });
+            });
+
+            document.getElementById('owner-mode-toggle')?.addEventListener('click', () => {
+                if (ownerMode) {
+                    // Lock owner mode immediately
+                    ownerMode = false;
+                    updateOwnerUIState();
+                    if (window.showToast) window.showToast("Owner Mode Locked 🔒");
+                } else {
+                    // Open PIN modal prompt
+                    const pinModal = document.getElementById('owner-passcode-modal');
+                    const pinInput = document.getElementById('owner-pin-input');
+                    const errorMsg = document.getElementById('pin-error-msg');
+                    if (errorMsg) errorMsg.classList.add('hidden');
+                    if (pinInput) pinInput.value = '';
+                    if (pinModal) pinModal.classList.remove('hidden');
+                    setTimeout(() => pinInput?.focus(), 100);
+                }
+            });
+
+            async function hashPinString(str) {
+                try {
+                    if (window.crypto && window.crypto.subtle) {
+                        const encoder = new TextEncoder();
+                        const data = encoder.encode(str);
+                        const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+                        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+                    }
+                } catch(e) {}
+                return 'pin_' + str;
+            }
+
+            async function verifyOwnerPIN() {
+                const pinInput = document.getElementById('owner-pin-input');
+                const errorMsg = document.getElementById('pin-error-msg');
+                const card = document.getElementById('passcode-card');
+                const inputVal = pinInput ? pinInput.value.trim() : '';
+
+                let savedHash = localStorage.getItem('radiance_owner_pin_hash');
+                let inputHash = await hashPinString(inputVal);
+                let defaultHash = await hashPinString('8888');
+
+                let isMatch = false;
+                if (savedHash) {
+                    isMatch = (inputHash === savedHash);
+                } else {
+                    isMatch = (inputVal === '8888' || inputHash === defaultHash);
+                }
+
+                if (isMatch) {
+                    ownerMode = true;
+                    updateOwnerUIState();
+                    document.getElementById('owner-passcode-modal')?.classList.add('hidden');
+                    if (window.showToast) window.showToast("Owner Mode Unlocked! 🔓");
+                } else {
+                    if (errorMsg) errorMsg.classList.remove('hidden');
+                    if (card) {
+                        card.classList.add('translate-x-2');
+                        setTimeout(() => card.classList.remove('translate-x-2'), 100);
+                        setTimeout(() => card.classList.add('-translate-x-2'), 200);
+                        setTimeout(() => card.classList.remove('-translate-x-2'), 300);
+                    }
+                }
+            }
+
+            function updateOwnerUIState() {
+                const btn = document.getElementById('owner-mode-toggle');
+                const icon = document.getElementById('owner-lock-icon');
+                const label = document.getElementById('owner-status-label');
+                const panel = document.getElementById('owner-upload-panel');
+
+                if (ownerMode) {
+                    if (btn) {
+                        btn.classList.add('bg-amber-500/30', 'border-amber-400');
+                        btn.classList.remove('bg-amber-500/10', 'border-amber-400/40');
+                    }
+                    if (icon) icon.className = 'fa-solid fa-lock-open text-amber-400';
+                    if (label) label.innerText = 'Owner Mode (Unlocked)';
+                    if (panel) panel.style.display = 'block';
+                } else {
+                    if (btn) {
+                        btn.classList.remove('bg-amber-500/30', 'border-amber-400');
+                        btn.classList.add('bg-amber-500/10', 'border-amber-400/40');
+                    }
+                    if (icon) icon.className = 'fa-solid fa-lock text-amber-400';
+                    if (label) label.innerText = 'Owner Mode (Locked)';
+                    if (panel) panel.style.display = 'none';
+                }
+            }
+
+            document.getElementById('submit-passcode-btn')?.addEventListener('click', verifyOwnerPIN);
+            document.getElementById('owner-pin-input')?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') verifyOwnerPIN();
+            });
+
+            document.getElementById('cancel-passcode-btn')?.addEventListener('click', () => {
+                document.getElementById('owner-passcode-modal')?.classList.add('hidden');
+            });
+
+            document.getElementById('change-pin-btn')?.addEventListener('click', async () => {
+                const newPinEl = document.getElementById('new-pin-input');
+                const newPinVal = newPinEl ? newPinEl.value.trim() : '';
+                if (!newPinVal || newPinVal.length < 4) {
+                    alert('Please enter a PIN with at least 4 characters.');
+                    return;
+                }
+                const newHash = await hashPinString(newPinVal);
+                localStorage.setItem('radiance_owner_pin_hash', newHash);
+                if (newPinEl) newPinEl.value = '';
+                if (window.showToast) window.showToast("Owner PIN updated successfully! 🔑");
+            });
+
+            // Ensure initial UI state reflects locked state
+            updateOwnerUIState();
+
+            document.getElementById('owner-file-input')?.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const base64 = event.target.result;
+                    const artId = ARTWORKS_DATA[activeArtworkIndex].id;
+                    if (window.applyCustomImageToMesh) {
+                        window.applyCustomImageToMesh(artId, base64);
+                    }
+                    if (window.saveArtworkToCloud) {
+                        window.saveArtworkToCloud(artId, base64, null);
+                    }
+                    if (window.showToast) {
+                        window.showToast("Image loaded! Click 'Export Standalone HTML' to save complete file 💾");
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+
+            document.getElementById('owner-save-btn')?.addEventListener('click', () => {
+                const priceInput = document.getElementById('owner-price-input');
+                const priceVal = priceInput ? priceInput.value : '';
+                const art = ARTWORKS_DATA[activeArtworkIndex];
+                art.price = priceVal;
+                const priceBadge = document.getElementById('price-badge');
+                if (priceBadge) priceBadge.innerText = priceVal || 'Inquire';
+                if (window.saveArtworkToCloud) {
+                    window.saveArtworkToCloud(art.id, null, priceVal);
+                }
+            });
+
+            function exportStandaloneHTML() {
+                try {
+                    const currentData = JSON.parse(JSON.stringify(window.ARTWORKS_DATA));
+                    
+                    // Create a clean DOM clone without runtime rendering artifacts
+                    const docClone = document.documentElement.cloneNode(true);
+                    
+                    // Clear runtime 3D canvas so the exported file creates fresh WebGL context on boot
+                    const canvasBox = docClone.querySelector('#canvas-container');
+                    if (canvasBox) canvasBox.innerHTML = '';
+
+                    // Restore Title Banner visibility in exported HTML
+                    const banner = docClone.querySelector('#title-banner-layer');
+                    if (banner) {
+                        banner.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-6');
+                        banner.classList.add('opacity-100', 'translate-y-0');
+                    }
+
+                    // Hide Artwork Drawer (slide back out) in exported HTML
+                    const drawer = docClone.querySelector('#artwork-drawer');
+                    if (drawer) {
+                        drawer.classList.add('translate-x-full');
+                    }
+
+                    // Hide any open modal overlays in export clone
+                    ['#catalog-modal', '#lightbox-modal', '#inquiry-modal'].forEach(id => {
+                        const m = docClone.querySelector(id);
+                        if (m) m.classList.add('hidden');
+                    });
+
+                    // Reset toast state in export clone
+                    const toast = docClone.querySelector('#toast-notification');
+                    if (toast) {
+                        toast.classList.remove('translate-y-0', 'opacity-100');
+                        toast.classList.add('translate-y-[-20px]', 'opacity-0', 'pointer-events-none');
+                    }
+
+                    let htmlContent = "<!DOCTYPE html>\n<html lang=\"en\">\n" + docClone.innerHTML + "\n</html>";
+
+                    // Robust Regex replacing between explicit comments
+                    const dataJsonString = JSON.stringify(currentData, null, 12);
+                    const newDatasetCode = `/* START_ARTWORKS_DATA */\n        const ARTWORKS_DATA = ${dataJsonString};\n        window.ARTWORKS_DATA = ARTWORKS_DATA;\n        /* END_ARTWORKS_DATA */`;
+                    
+                    const replacementRegex = /\/\* START_ARTWORKS_DATA \*\/[\s\S]*?\/\* END_ARTWORKS_DATA \*\//;
+
+                    if (replacementRegex.test(htmlContent)) {
+                        htmlContent = htmlContent.replace(replacementRegex, newDatasetCode);
+                    } else {
+                        throw new Error("Could not locate ARTWORKS_DATA block boundary markers.");
+                    }
+
+                    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = url;
+                    downloadLink.download = `Radiance_Exhibition_Standalone_${new Date().toISOString().slice(0,10)}.html`;
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                    URL.revokeObjectURL(url);
+
+                    if (window.showToast) window.showToast("Exported Standalone HTML with all embedded images! 📄✨");
+                } catch (e) {
+                    console.error("Export failed:", e);
+                    alert("Failed to export HTML: " + e.message);
+                }
+            }
+
+            document.getElementById('export-standalone-html-btn')?.addEventListener('click', () => {
+                exportStandaloneHTML();
+            });
+
+            document.getElementById('export-json-btn')?.addEventListener('click', () => {
+                const exportData = ARTWORKS_DATA.map(a => ({ id: a.id, price: a.price, customImg: a.customImg }));
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Radiance_Exhibition_Data_${new Date().toISOString().slice(0,10)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+
+            const importFileInput = document.getElementById('import-file-input');
+            document.getElementById('import-json-btn')?.addEventListener('click', () => {
+                importFileInput?.click();
+            });
+
+            importFileInput?.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const items = JSON.parse(event.target.result);
+                        if (Array.isArray(items)) {
+                            items.forEach(item => {
+                                const art = ARTWORKS_DATA.find(a => a.id === item.id);
+                                if (art) {
+                                    if (item.price) art.price = item.price;
+                                    if (item.customImg) {
+                                        art.customImg = item.customImg;
+                                        if (window.applyCustomImageToMesh) {
+                                            window.applyCustomImageToMesh(art.id, item.customImg);
+                                        }
+                                    }
+                                    saveLocalArtwork(art.id, item.customImg, item.price);
+                                }
+                            });
+                            if (window.showToast) window.showToast("Batch Data Imported Successfully! 📂");
+                            renderCatalogGrid('all');
+                        }
+                    } catch (err) {
+                        alert("Invalid JSON file format.");
+                    }
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        function renderCatalogGrid(filter = 'all') {
+            const grid = document.getElementById('catalog-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            ARTWORKS_DATA.forEach((art, idx) => {
+                const isForSale = art.price && art.price !== 'N.F.S';
+                if (filter === 'sale' && !isForSale) return;
+                if (filter === 'nfs' && isForSale) return;
+
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-2xl p-3 border border-gray-200 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col justify-between';
+                card.innerHTML = `
+                    <div>
+                        <div class="relative h-48 bg-gray-900 rounded-xl overflow-hidden mb-2.5 flex items-center justify-center">
+                            <img src="${art.customImg || `https://placehold.co/400x600/0f254e/ffd700?text=${encodeURIComponent(art.titleEn)}`}" alt="${art.titleEn}" class="max-h-full max-w-full object-contain">
+                            <span class="absolute top-2 right-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/90 text-gray-900 shadow">
+                                ${art.price || 'Inquire'}
+                            </span>
+                        </div>
+                        <div class="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-0.5">NO. ${art.id} • ${art.year}</div>
+                        <h4 class="font-bold text-gray-900 text-sm leading-snug truncate">${art.titleZh}</h4>
+                        <p class="text-xs text-gray-500 truncate mb-2">${art.titleEn}</p>
+                    </div>
+                    <button class="w-full py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl text-xs font-bold transition">
+                        View in 3D / 查看
+                    </button>
+                `;
+
+                card.addEventListener('click', () => {
+                    document.getElementById('catalog-modal')?.classList.add('hidden');
+                    focusOnArtwork(idx);
+                    openDrawer(art);
+                });
+
+                grid.appendChild(card);
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await applySavedArtworksData();
+            init3D();
+        });
+    </script>
+</body>
+</html>
