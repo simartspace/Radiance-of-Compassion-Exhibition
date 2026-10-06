@@ -12,7 +12,7 @@
     <!-- Three.js 3D Library CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-    <script>
+       <script>
         tailwind.config = {
             theme: {
                 extend: {
@@ -29,6 +29,50 @@
                 }
             }
         };
+
+        // =======================================================
+        //   !!! EMERGENCY VISUAL OVERRIDE: LIFTS THE DARK WALL !!!
+        // =======================================================
+        (function() {
+            // 1. Force structural visibility rules before any canvas layers execute
+            const visualFix = document.createElement('style');
+            visualFix.innerHTML = `
+                #owner-overlay, .owner-verification, #loading-screen, .loader, 
+                [id*="overlay"], [class*="overlay"], [id*="loading"], [class*="loading"] { 
+                    display: none !important; 
+                    visibility: hidden !important; 
+                    pointer-events: none !important; 
+                    opacity: 0 !important; 
+                }
+                body, html { 
+                    overflow: auto !important; 
+                    background: #ffffff !important; 
+                }
+                #main-content, #app, .catalog-container, main {
+                    display: block !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                }
+            `;
+            document.head.appendChild(visualFix);
+
+            // 2. Destructive HTML blocker layer cleanup once DOM components initialize
+            function liftDarkMask() {
+                ['owner-overlay', 'loading-screen'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.remove();
+                });
+                const wrappers = document.querySelectorAll('.owner-verification, .loader');
+                wrappers.forEach(w => w.remove());
+            }
+            
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', liftDarkMask);
+            } else {
+                liftDarkMask();
+            }
+        })();
+        // =======================================================
     </script>
 
     <style>
@@ -921,69 +965,6 @@
         let isZoomed = false;
         let ownerMode = false; // Locked by default for security
  
-// --- FORCE EXTRACT CATALOG AND KILL LOADING SCREENS ---
-const globalBypass = document.createElement('style');
-globalBypass.innerHTML = `
-    #owner-overlay, .owner-verification, #loading-screen, .loader, [id*="loading"], [class*="loading"] { 
-        display: none !important; 
-        visibility: hidden !important; 
-        pointer-events: none !important; 
-        opacity: 0 !important; 
-    }
-    body, html { 
-        overflow: auto !important; 
-        background: #ffffff !important; 
-    }
-    #main-content, #app, .catalog-container, main {
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
-`;
-document.head.appendChild(globalBypass);
-
-document.addEventListener("DOMContentLoaded", function() {
-    // Instantly wipe out all blockers from the HTML structure
-    ['owner-overlay', 'loading-screen'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.remove();
-    });
-});
-
-// Force-unlock the Audio System when visitors click either text-to-speech button
-window.addEventListener('click', function(e) {
-    const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en');
-    if (!targetButton) return;
-    
-    e.stopPropagation(); 
-    
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.resume();
-    }
-    
-    const dataIndex = window.activeArtworkIndex !== undefined ? window.activeArtworkIndex : 0;
-    const artworks = window.ARTWORKS_DATA || [];
-    if (!artworks[dataIndex]) return;
-    
-    const targetArt = artworks[dataIndex];
-    const isChinese = targetButton.id === 'tts-btn-zh';
-    
-    let speakText = "";
-    if (isChinese) {
-        speakText = `${targetArt.name_zh || '作品'}. ${targetArt.desc_zh || ''}`;
-    } else {
-        speakText = `${targetArt.name_en || 'Artwork'}. ${targetArt.desc_en || ''}`;
-    }
-
-    if (speakText.trim() !== "") {
-        const utterance = new SpeechSynthesisUtterance(speakText);
-        utterance.lang = isChinese ? 'zh-CN' : 'en-US';
-        utterance.rate = 0.9; 
-        window.speechSynthesis.speak(utterance);
-    }
-}, true);
-
         const defaultCamPos = { x: 0, y: 1.6, z: 11 };
         const defaultCamTarget = { x: 0, y: 1.6, z: 0 };
         let currentCamPos = { ...defaultCamPos };
