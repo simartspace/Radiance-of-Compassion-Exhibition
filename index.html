@@ -48,19 +48,23 @@
                     overflow: auto !important; 
                     background: #ffffff !important; 
                 }
-
                 #main-content, #app, .catalog-container, main {
                     display: block !important;
                     visibility: visible !important;
                     opacity: 1 !important;
                 }
- /* Force exhibition action buttons to be instantly clickable over the 3D background */
-   #tts-btn-zh, #tts-btn-en, .action-btn, button, a {
-       position: relative !important;
-       z-index: 999999 !important;
-       pointer-events: auto !important;
-       cursor: pointer !important;
-   }
+                /* Force exhibition action buttons to respond instantly to taps over the 3D space */
+                #tts-btn-zh, #tts-btn-en, .action-btn, button, a, [onclick], [id*="btn"] {
+                    position: relative !important;
+                    z-index: 999999 !important;
+                    pointer-events: auto !important;
+                    cursor: pointer !important;
+                }
+                /* Ensure the description panel itself is prioritized */
+                .fixed, [class*="modal"], .artwork-description {
+                    z-index: 999998 !important;
+                    pointer-events: auto !important;
+                }
             `;
             document.head.appendChild(visualFix);
 
@@ -981,108 +985,69 @@ window.addEventListener('click', function(e) {
     }
 }, true);
 
-// Force-unlock the Audio System and pull text details matching the visible screen text after a safe delay
+// Invisible data bucket tracker to sync 3D slides to audio instantly
+window.addEventListener('click', function(e) {
+    setTimeout(function() {
+        const dataIndex = window.activeArtworkIndex !== undefined ? window.activeArtworkIndex : 0;
+        const artworks = window.ARTWORKS_DATA || [];
+        const targetArt = artworks[dataIndex] || {};
+        
+        // Lock the exact active text paragraphs into the browser session window memory
+        window.currentGalleryZH = targetArt.desc_zh || "";
+        window.currentGalleryEN = targetArt.desc_en || "";
+    }, 100);
+}, true);
+
+// Force-unlock the Audio System and read from our synced memory bucket with ZERO lag
 window.addEventListener('click', function(e) {
     const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en');
     if (!targetButton) return;
     
     e.stopPropagation(); // Stops the 3D scene from eating the click
     
-    // Safety clear to eliminate overlap loops
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
     }
     
     const isChinese = targetButton.id === 'tts-btn-zh';
+    
+    // Read directly from the locked memory bucket matching the active screen panel
+    let speakText = isChinese ? window.currentGalleryZH : window.currentGalleryEN;
 
-    // 1. Wait exactly 350 milliseconds for the panel variables and text text to populate on screen first
-    setTimeout(function() {
-        let speakText = "";
-
-        // Find the active pop-up modal panel container
-        const modalContainer = targetButton.closest('.fixed') || targetButton.closest('[class*="modal"]') || document.body;
-        
-        // Extract the actual active Heading Title text currently visible on the screen
-        const headingZH = modalContainer.querySelector('h2')?.innerText.trim() || "";
-        const headingEN = modalContainer.querySelector('h3')?.innerText.trim() || "";
-        const fallbackTitle = modalContainer.querySelector('.font-bold')?.innerText.trim() || "";
-
-        const activeTitle = isChinese ? (headingZH || fallbackTitle) : (headingEN || fallbackTitle);
-        const artworks = window.ARTWORKS_DATA || [];
-        
-        // Search the data matrix for an exact match to the visible screen title
-        if (activeTitle) {
-            const matchedArt = artworks.find(art => {
-                const nameZH = (art.name_zh || "").trim();
-                const nameEN = (art.name_en || "").trim();
-                return activeTitle.includes(nameZH) || activeTitle.includes(nameEN) || nameZH.includes(activeTitle) || nameEN.includes(activeTitle);
-            });
-
-            if (matchedArt) {
-                speakText = isChinese ? matchedArt.desc_zh : matchedArt.desc_en;
-            }
+    // Hardcoded absolute safety fallbacks for your display panel if the memory stream is initializing
+    if (!speakText || speakText.length < 5) {
+        if (isChinese) {
+            speakText = "文殊菩萨为智慧之化身。右手持般若慧剑，断除一切无明、烦恼与执着；左手持莲花，花上安放《般若经》，象征智慧 of wisdom.";
+        } else {
+            speakText = "Bodhisattva of Wisdom. Right hand holds the Sword of Wisdom, cutting through ignorance, afflictions, and deluded attachments. Left hand holds a lotus resting the Prajna-sutra (Perfection of Wisdom Sutra) symbolizing the treasure of wisdom.";
         }
+    }
 
-        // Smart Scrape Fallback: If background database fails, read directly from the paragraph elements
-        if (!speakText || speakText.trim() === "") {
-            const descBlock = modalContainer.querySelector('.artwork-description') || 
-                              modalContainer.querySelector('[class*="description"]') || 
-                              modalContainer.querySelector('h4, .font-bold')?.nextElementSibling;
-
-            if (descBlock) {
-                const paragraphs = descBlock.querySelectorAll('p, div');
-                let matchedLines = [];
-                
-                paragraphs.forEach(p => {
-                    const textLine = p.innerText.trim();
-                    if (textLine && !textLine.includes('ARTWORK DESCRIPTION') && !textLine.includes('作品解说') && !textLine.includes('Audio Guide')) {
-                        const isZHLine = /[\u4e00-\u9fa5]/.test(textLine);
-                        if ((isChinese && isZHLine) || (!isChinese && !isZHLine)) {
-                            matchedLines.push(textLine);
-                        }
-                    }
-                });
-                speakText = matchedLines.join(" ");
-            }
-        }
-
-        // Absolute hardcoded backstop if all extraction methods timeout
-        if (!speakText || speakText.trim().length < 5) {
+    if (speakText.trim() !== "") {
+        const utterance = new SpeechSynthesisUtterance(speakText);
+        utterance.rate = 0.82; // Set elegant gallery tour delivery pace
+        
+        if ('speechSynthesis' in window) {
+            const activeVoices = window.speechSynthesis.getVoices() || [];
             if (isChinese) {
-                speakText = "文殊菩萨为智慧之化身。右手持般若慧剑，断除一切无明、烦恼与执着；左手持莲花，花上安放《般若经》，象征智慧之宝藏。";
+                utterance.lang = 'zh-CN';
+                const premiumZH = activeVoices.find(v => 
+                    (v.lang.startsWith('zh') || v.lang.includes('CN')) && 
+                    (v.name.includes('Google 普通话') || v.name.includes('Natural') || v.name.includes('Xiaoxiao') || v.name.includes('Premium') || v.name.includes('Tingting'))
+                );
+                if (premiumZH) utterance.voice = premiumZH;
             } else {
-                speakText = "Bodhisattva of Wisdom. Right hand holds the Sword of Wisdom, cutting through ignorance, afflictions, and deluded attachments. Left hand holds a lotus resting the Prajna-sutra (Perfection of Wisdom Sutra) symbolizing the treasure of wisdom.";
+                utterance.lang = 'en-US';
+                const premiumEN = activeVoices.find(v => 
+                    v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Zira'))
+                );
+                if (premiumEN) utterance.voice = premiumEN;
             }
         }
-
-        // Fire the narration track using your browser's premium localized speech assets
-        if (speakText.trim() !== "") {
-            const utterance = new SpeechSynthesisUtterance(speakText);
-            utterance.rate = 0.82; // Unhurried gallery tour delivery pace
-            
-            if ('speechSynthesis' in window) {
-                const activeVoices = window.speechSynthesis.getVoices() || [];
-                
-                if (isChinese) {
-                    utterance.lang = 'zh-CN';
-                    const premiumZH = activeVoices.find(v => 
-                        (v.lang.startsWith('zh') || v.lang.includes('CN')) && 
-                        (v.name.includes('Google 普通话') || v.name.includes('Natural') || v.name.includes('Xiaoxiao') || v.name.includes('Premium') || v.name.includes('Tingting'))
-                    );
-                    if (premiumZH) utterance.voice = premiumZH;
-                } else {
-                    utterance.lang = 'en-US';
-                    const premiumEN = activeVoices.find(v => 
-                        v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Zira'))
-                    );
-                    if (premiumEN) utterance.voice = premiumEN;
-                }
-            }
-            
-            window.speechSynthesis.speak(utterance);
-            window.speechSynthesis.resume(); // Unlocks mobile sleep flags
-        }
-    }, 350); // The 350ms delay gives the UI plenty of time to render the new text details
+        
+        window.speechSynthesis.speak(utterance);
+        window.speechSynthesis.resume(); // Lift mobile sleep blocks instantly
+    }
 }, true);
 
         const defaultCamPos = { x: 0, y: 1.6, z: 11 };
