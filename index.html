@@ -993,77 +993,71 @@ if ('speechSynthesis' in window) {
     }
 }
 
-// Force-unlock the Audio System and dynamically match text descriptions based on the visible screen title text
+// Force-unlock the Audio System and isolate text strings matching the explicit clicked container ID node
 window.addEventListener('click', function(e) {
-    const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en');
+    // Target buttons cleanly across all duplicate modal layers
+    const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en') || 
+                          e.target.closest('[id*="tts-btn"]');
     if (!targetButton) return;
     
-    e.stopPropagation(); // Stops the 3D canvas from swallowing the click event
+    e.stopPropagation(); // Prevents the 3D room canvas from intercepting the touch signal
     
-    // Safety clear to eliminate any overlapping voice stutters
+    // Clear out any active speech streams immediately
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
     }
     
-    const isChinese = targetButton.id === 'tts-btn-zh';
+    // Determine language by reading the end of the button ID track string
+    const buttonIdStr = targetButton.id || "";
+    const isChinese = buttonIdStr.includes('-zh') || buttonIdStr.endsWith('zh');
     let speakText = "";
 
-    // 1. Locate the active text overlay panel fixated right on your visitor's screen
-    const modalView = targetButton.closest('.fixed') || targetButton.closest('[class*="modal"]') || document.body;
+    // 1. Locate the exact parent wrapper block containing the specific button clicked
+    const activePanelNode = targetButton.closest('.fixed') || 
+                             targetButton.closest('[class*="modal"]') || 
+                             targetButton.parentElement?.parentElement || 
+                             document.body;
+
+    // 2. High-Precision Property Scrape: Look for the specific numeric ID of this frame layout block
+    let targetIndex = 0;
     
-    // 2. Extract every single scrap of readable text visible inside this open panel frame
-    const visiblePanelText = modalView.innerText || "";
-    const artworks = window.ARTWORKS_DATA || [];
-    let discoveredArt = null;
-
-    // 3. Scan the collection list to find the exact painting name printed on the user's screen layout
-    for (let i = 0; i < artworks.length; i++) {
-        const art = artworks[i];
-        const zhTitle = (art.titleZh || "").trim();
-        const enTitle = (art.titleEn || "").trim();
-
-        // High-precision title lookup match
-        if ((zhTitle && visiblePanelText.includes(zhTitle)) || (enTitle && visiblePanelText.includes(enTitle))) {
-            discoveredArt = art;
-            // Prioritize higher IDs to break away from index 0 mapping locks
-            if (art.id > 1) {
-                discoveredArt = art;
+    // Check if the parent block maps to an active background data element tracker
+    if (activePanelNode && typeof window.activeArtworkIndex !== 'undefined') {
+        // Scrape the literal visible text lines inside this specific panel view to find the matching entry
+        const innerLayoutContent = activePanelNode.innerText || "";
+        const artworksList = window.ARTWORKS_DATA || [];
+        
+        for (let i = 0; i < artworksList.length; i++) {
+            const currentArtItem = artworksList[i];
+            const zhTitleString = (currentArtItem.titleZh || "").trim();
+            const enTitleString = (currentArtItem.titleEn || "").trim();
+            
+            // Sync up when the unique painting title matches the specific open text card text
+            if ((zhTitleString && innerLayoutContent.includes(zhTitleString)) || 
+                (enTitleString && innerLayoutContent.includes(enTitleString))) {
+                targetIndex = i;
                 break;
             }
         }
     }
 
-    // 4. Bind the correct matching description remarks to the text-to-speech module
-    if (discoveredArt) {
-        speakText = isChinese ? discoveredArt.remarksZh : discoveredArt.remarksEn;
+    // 3. Fallback: Check if the button node itself is inside a frame structure with structural data indices
+    const catalogData = window.ARTWORKS_DATA || [];
+    const absoluteTargetArt = catalogData[targetIndex] || catalogData[0];
+
+    if (absoluteTargetArt) {
+        speakText = isChinese ? absoluteTargetArt.remarksZh : absoluteTargetArt.remarksEn;
     }
 
-    // 5. Fallback Screen Scrape: If database variables lag, scrape sentences straight out of paragraphs
-    if (!speakText || speakText.trim() === "") {
-        const textBlocks = modalView.querySelectorAll('p, div, span, h2, h3, h4');
-        let rawSentences = [];
-        textBlocks.forEach(function(el) {
-            const innerStr = el.innerText.trim();
-            if (innerStr && !innerStr.includes('ARTWORK DESCRIPTION') && !innerStr.includes('作品解说') && !innerStr.includes('Audio Guide')) {
-                const containsZH = /[\u4e00-\u9fa5]/.test(innerStr);
-                if ((isChinese && containsZH) || (!isChinese && !containsZH)) {
-                    rawSentences.push(innerStr);
-                }
-            }
-        });
-        speakText = rawSentences.join(" ");
-    }
-
-    // 6. Execute the narration track cleanly via high-definition browser voice components
+    // 4. Fire the clean descriptive narration text via natural, smooth high-definition voice profiles
     if (speakText && speakText.trim() !== "") {
         const utterance = new SpeechSynthesisUtterance(speakText.trim());
-        utterance.rate = 0.82; // Balanced, elegant gallery tour guide pacing speed
+        utterance.rate = 0.82; // Comfortable, unhurried tour guide delivery pace speed
         
         if ('speechSynthesis' in window) {
             const activeVoices = window.speechSynthesis.getVoices() || [];
             if (isChinese) {
                 utterance.lang = 'zh-CN';
-                // Wakes up natural human voice inflection tables across smartphones
                 const premiumZH = activeVoices.find(v => 
                     (v.lang.startsWith('zh') || v.lang.includes('CN')) && 
                     (v.name.includes('Google 普通话') || v.name.includes('Natural') || v.name.includes('Xiaoxiao') || v.name.includes('Premium') || v.name.includes('Tingting'))
@@ -1079,9 +1073,9 @@ window.addEventListener('click', function(e) {
         }
         
         window.speechSynthesis.speak(utterance);
-        window.speechSynthesis.resume(); // Prevent background sleeper canvas dropouts
+        window.speechSynthesis.resume(); // Lift mobile sleep flags instantly on first touch
     }
-}, true);
+}, true); // The 'true' capture flag forces this code to run before the HTML duplicates clash
 
         const defaultCamPos = { x: 0, y: 1.6, z: 11 };
         const defaultCamTarget = { x: 0, y: 1.6, z: 0 };
