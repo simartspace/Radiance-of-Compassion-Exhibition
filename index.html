@@ -985,85 +985,44 @@ window.addEventListener('click', function(e) {
     }
 }, true);
 
-// Force-unlock the Audio System and extract the visible description paragraph directly from the active screen box
-window.addEventListener('click', function(e) {
-    const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en');
-    if (!targetButton) return;
-    
-    e.stopPropagation(); // Stops the 3D scene from eating the click
-    
-    // Safety clear to completely eliminate audio overlap loops
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-    }
-    
-    const isChinese = targetButton.id === 'tts-btn-zh';
-    let speakText = "";
-
-    // 1. Locate the active viewing panel fixed on the screen layout
-    const modalContainer = targetButton.closest('.fixed') || targetButton.closest('[class*="modal"]') || document.body;
-    
-    // 2. Target the exact HTML wrapper containing your bilingual artwork description paragraphs
-    const descBlock = modalContainer.querySelector('.artwork-description') || 
-                      modalContainer.querySelector('[class*="description"]') || 
-                      modalContainer.querySelector('h4, .font-bold')?.nextElementSibling;
-
-    if (descBlock) {
-        // Collect every single paragraph line inside the description layout box
-        const paragraphs = descBlock.querySelectorAll('p, div, span');
-        let cleanLines = [];
+// NATIVE AUDIO GUIDE ENGINE: Bypasses 3D lag and forces instant click response
+document.addEventListener("DOMContentLoaded", function() {
+    // Intercept clicks directly on the window to prevent the 3D scene from eating the touch signal
+    window.addEventListener('click', function(e) {
+        const btn = e.target.closest('#tts-btn-zh, #tts-btn-en');
+        if (!btn) return;
         
-        paragraphs.forEach(p => {
-            const line = p.innerText.trim();
-            // Strict filtering rules to skip technical headers, file values, and navigation labels
-            if (line && 
-                !line.startsWith("ARTWORK") && 
-                !line.startsWith("NO.") && 
-                !line.startsWith("作品解说") && 
-                !line.includes("Audio Guide") && 
-                !line.includes("点击放大") && 
-                !line.includes("Click to Zoom") && 
-                !line.includes("Medium /") && 
-                !line.includes("Dimensions /") && 
-                !line.includes("Year /") && 
-                !line.includes("Artist /")) {
-                cleanLines.push(line);
-            }
-        });
+        e.stopPropagation(); // Instantly stops the 3D room from lagging the button click
+        
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel(); // Force clear any frozen audio loops
 
-        // 3. Separate Chinese character blocks from English sentences dynamically
-        const mergedText = cleanLines.join(" ");
-        const chunks = mergedText.split(/([.!?。区域！？\n])/);
-        let validSentences = [];
+        // Read the true active painting index directly from your website's database
+        const activeIndex = (typeof window.activeArtworkIndex !== 'undefined') ? window.activeArtworkIndex : 0;
+        const catalogData = window.ARTWORKS_DATA || [];
+        const currentArt = catalogData[activeIndex];
 
-        for (let i = 0; i < chunks.length; i++) {
-            const chunk = chunks[i];
-            if (!chunk || chunk.trim().length < 2) continue;
-            
-            // Check for native Chinese characters versus regular alphabets
-            const hasChineseCharacters = /[\u4e00-\u9fa5]/.test(chunk);
-            if (isChinese && hasChineseCharacters) {
-                validSentences.push(chunk);
-            } else if (!isChinese && !hasChineseCharacters) {
-                validSentences.push(chunk);
-            }
+        if (!currentArt) return;
+
+        const isChineseTrack = btn.id === 'tts-btn-zh';
+        let narrativeText = isChineseTrack ? currentArt.desc_zh : currentArt.desc_en;
+
+        // If the description database field is empty, safely use the artwork name
+        if (!narrativeText || narrativeText.trim() === "") {
+            narrativeText = isChineseTrack ? currentArt.name_zh : currentArt.name_en;
         }
-        speakText = validSentences.join("").trim();
-    }
 
-    // 4. Fire the clean description narration track out loud using the phone's native system voice
-    if (speakText && speakText.trim() !== "") {
-        const utterance = new SpeechSynthesisUtterance(speakText);
-        
-        // Match the language strings explicitly
-        utterance.lang = isChinese ? 'zh-CN' : 'en-US';
-        utterance.rate = 0.82; // Set soft, unhurried gallery tour narration delivery pace
-        
-        // Speak immediately without forcing any hidden voice names that cause browser crashes
-        window.speechSynthesis.speak(utterance);
-        window.speechSynthesis.resume(); // Prevent mobile background canvas sleep disconnects
-    }
-}, true);
+        if (narrativeText && narrativeText.trim() !== "") {
+            const guideSpeech = new SpeechSynthesisUtterance(narrativeText);
+            guideSpeech.lang = isChineseTrack ? 'zh-CN' : 'en-US';
+            guideSpeech.rate = 0.82; // Comfortable, unhurried gallery tour guide pace
+            
+            // Speak naturally without forcing voice maps that cause mobile browser crashes
+            window.speechSynthesis.speak(guideSpeech);
+            window.speechSynthesis.resume(); // Wakes up mobile engines instantly
+        }
+    }, true); // The 'true' flag guarantees this fires before the 3D map engine intercepts it
+});
 
         const defaultCamPos = { x: 0, y: 1.6, z: 11 };
         const defaultCamTarget = { x: 0, y: 1.6, z: 0 };
