@@ -973,7 +973,7 @@
         let isZoomed = false;
         let ownerMode = false; // Locked by default for security
 
-// Force-unlock the Audio System when visitors click either text-to-speech button
+// Force-unlock the Audio System and extract description text directly from the active view screen
 window.addEventListener('click', function(e) {
     const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en');
     if (!targetButton) return;
@@ -985,28 +985,55 @@ window.addEventListener('click', function(e) {
         window.speechSynthesis.cancel();
     }
     
-    const dataIndex = window.activeArtworkIndex !== undefined ? window.activeArtworkIndex : 0;
-    const artworks = window.ARTWORKS_DATA || [];
-    const targetArt = artworks[dataIndex] || {};
     const isChinese = targetButton.id === 'tts-btn-zh';
-    
     let speakText = "";
+
+    // 1. Locate the description area on the screen dynamically
+    const modalContainer = targetButton.closest('.fixed') || targetButton.closest('[class*="modal"]') || document.body;
     
-    // Smart Fallback Detection: If data properties aren't ready, announce the official title
-    if (isChinese) {
-        speakText = targetArt.desc_zh || targetArt.name_zh || "欢迎来到慈光常書佛菩薩聖像藝術展。药师佛，材质绢本水彩。";
-    } else {
-        speakText = targetArt.desc_en || targetArt.name_en || "Welcome to Radiance of Compassion Contemporary Chinese Buddhist Art Exhibition by Sue Loh. Medicine Buddha, Watercolor on Satin silk.";
+    // 2. Extract the clean text directly from your HTML layout paragraphs
+    const descSection = modalContainer.querySelector('.artwork-description') || 
+                        modalContainer.querySelector('[class*="description"]') || 
+                        modalContainer.querySelector('div:has(> p)');
+
+    if (descSection) {
+        const paragraphs = descSection.querySelectorAll('p, div');
+        let zhTexts = [];
+        let enTexts = [];
+
+        paragraphs.forEach(p => {
+            const text = p.innerText.trim();
+            if (text && !text.startsWith("ARTWORK") && !text.startsWith("作品解说") && !text.includes("Audio Guide")) {
+                // Separate Chinese text strings from English text strings automatically
+                if (/[\u4e00-\u9fa5]/.test(text)) {
+                    zhTexts.push(text);
+                } else {
+                    enTexts.push(text);
+                }
+            }
+        });
+
+        // Use only the description text matching the button clicked
+        speakText = isChinese ? zhTexts.join(" ") : enTexts.join(" ");
     }
 
+    // 3. Perfect fallback safety nets using your exact text in case data is loading slowly
+    if (!speakText || speakText.trim() === "" || speakText.length < 5) {
+        if (isChinese) {
+            speakText = "文殊菩萨为智慧之化身。右手持般若慧剑，断除一切无明、烦恼与执着；左手持莲花，花上安放《般若经》，象征智慧之宝藏。";
+        } else {
+            speakText = "Bodhisattva of Wisdom. Right hand holds the Sword of Wisdom, cutting through ignorance, afflictions, and deluded attachments. Left hand holds a lotus resting the Prajna-sutra (Perfection of Wisdom Sutra) symbolizing the treasure of wisdom.";
+        }
+    }
+
+    // 4. Run the clean narration track out loud to your visitor
     if (speakText.trim() !== "") {
         const utterance = new SpeechSynthesisUtterance(speakText);
         utterance.lang = isChinese ? 'zh-CN' : 'en-US';
         utterance.rate = 0.85; // Elegant gallery narration speed
         
-        // Critical Mobile Fix: Wakes up mobile engines out of background sleep modes
         window.speechSynthesis.speak(utterance);
-        window.speechSynthesis.resume();
+        window.speechSynthesis.resume(); // Unlocks mobile background sleep flags
     }
 }, true);
  
