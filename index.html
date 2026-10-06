@@ -986,7 +986,25 @@ window.addEventListener('click', function(e) {
     }
 }, true);
 
-// Force-unlock the Audio System and extract description text directly from the screen elements
+// AUTOMATIC GALLERY IMAGE HEALER: Automatically falls back between .jpg and .jpeg if spelling is mismatched
+document.addEventListener("DOMContentLoaded", function() {
+    setTimeout(function() {
+        const images = document.querySelectorAll('img');
+        images.forEach(function(img) {
+            if (img.src && img.src.includes('images/')) {
+                img.addEventListener('error', function() {
+                    if (img.src.endsWith('.jpeg')) {
+                        img.src = img.src.replace('.jpeg', '.jpg');
+                    } else if (img.src.endsWith('.jpg')) {
+                        img.src = img.src.replace('.jpg', '.jpeg');
+                    }
+                });
+            }
+        });
+    }, 1000);
+});
+
+// Force-unlock the Audio System and dynamically match text descriptions based on the visible screen title
 window.addEventListener('click', function(e) {
     const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en');
     if (!targetButton) return;
@@ -998,74 +1016,76 @@ window.addEventListener('click', function(e) {
     }
     
     const isChinese = targetButton.id === 'tts-btn-zh';
-    let speakText = "";
-
-    // 1. Locate the active text panel overlay container fixated on your visitor's screen
-    const modalContainer = targetButton.closest('.fixed') || targetButton.closest('[class*="modal"]') || document.body;
     
-    // 2. Isolate the text elements explicitly inside your template's descriptions block container
-    const descBlock = modalContainer.querySelector('.artwork-description') || 
-                      modalContainer.querySelector('[class*="description"]') || 
-                      modalContainer.querySelector('h4, .font-bold')?.nextElementSibling;
-
-    if (descBlock) {
-        const paragraphs = descBlock.querySelectorAll('p, div, span');
-        let rawLines = [];
+    // Wait exactly 250 milliseconds for the panel title to safely populate on screen
+    setTimeout(function() {
+        let speakText = "";
         
-        paragraphs.forEach(p => {
-            const line = p.innerText.trim();
-            // Filter out technical headers, file values, and navigation UI label tracks
-            if (line && 
-                !line.startsWith("ARTWORK") && 
-                !line.startsWith("NO.") && 
-                !line.startsWith("作品解说") && 
-                !line.includes("Audio Guide") && 
-                !line.includes("点击放大") && 
-                !line.includes("Click to Zoom") && 
-                !line.includes("Medium /") && 
-                !line.includes("Dimensions /") && 
-                !line.includes("Year /") && 
-                !line.includes("Artist /")) {
-                rawLines.push(line);
-            }
-        });
-
-        // 3. Separate Chinese characters from English sentences based on character sets dynamically
-        const fullTextStr = rawLines.join(" ");
-        const sentences = fullTextStr.split(/([.!?。区域！？\n])/);
-        let languageSentences = [];
-
-        for (let i = 0; i < sentences.length; i++) {
-            const chunk = sentences[i];
-            if (!chunk || chunk.trim().length < 2) continue;
+        // Locate the active viewing panel fixed on the user screen layout
+        const modalContainer = targetButton.closest('.fixed') || targetButton.closest('[class*="modal"]') || document.body;
+        
+        // Extract the literal active Heading Title text currently visible on the screen card
+        const visibleTitleZH = modalContainer.querySelector('h2')?.innerText.trim() || "";
+        const visibleTitleEN = modalContainer.querySelector('h3')?.innerText.trim() || "";
+        const fallbackTitle = modalContainer.querySelector('.font-bold, h4')?.innerText.trim() || "";
+        
+        const activeTitle = isChinese ? (visibleTitleZH || fallbackTitle) : (visibleTitleEN || fallbackTitle);
+        const artworks = window.ARTWORKS_DATA || [];
+        
+        // Search the background data lists for a match to the visible screen title
+        if (activeTitle) {
+            const matchedArt = artworks.find(function(art) {
+                const nameZH = (art.titleZh || "").trim();
+                const nameEN = (art.titleEn || "").trim();
+                return activeTitle.includes(nameZH) || activeTitle.includes(nameEN) || 
+                       nameZH.includes(activeTitle) || nameEN.includes(activeTitle);
+            });
             
-            const containsChinese = /[\u4e00-\u9fa5]/.test(chunk);
-            if (isChinese && containsChinese) {
-                languageSentences.push(chunk);
-            } else if (!isChinese && !containsChinese) {
-                languageSentences.push(chunk);
+            if (matchedArt) {
+                speakText = isChinese ? matchedArt.remarksZh : matchedArt.remarksEn;
             }
         }
-        speakText = languageSentences.join("").trim();
-    }
-
-    // 4. Absolute Hardcoded Safety Backstops if structural rendering delays occur
-    if (!speakText || speakText.length < 5) {
-        const activeIndex = (typeof window.activeArtworkIndex !== 'undefined') ? window.activeArtworkIndex : 0;
-        const artworks = window.ARTWORKS_DATA || [];
-        const currentArt = artworks[activeIndex] || {};
-        speakText = isChinese ? (currentArt.remarksZh || "") : (currentArt.remarksEn || "");
-    }
-
-    // 5. Fire the narration track out loud using the browser's native audio speech components
-    if (speakText && speakText.trim() !== "") {
-        const utterance = new SpeechSynthesisUtterance(speakText);
-        utterance.lang = isChinese ? 'zh-CN' : 'en-US';
-        utterance.rate = 0.82; // Set soft, unhurried gallery tour narration delivery speed
         
-        window.speechSynthesis.speak(utterance);
-        window.speechSynthesis.resume(); // Lift core sleep modes across mobile engines instantly
-    }
+        // Smart Scrape Fallback: If database matching fails, scrape the paragraph text directly
+        if (!speakText || speakText.trim() === "") {
+            const descBlock = modalContainer.querySelector('.artwork-description') || 
+                              modalContainer.querySelector('[class*="description"]') || 
+                              modalContainer.querySelector('h4, .font-bold')?.nextElementSibling;
+            
+            if (descBlock) {
+                const paragraphs = descBlock.querySelectorAll('p, div, span');
+                let matchedLines = [];
+                
+                paragraphs.forEach(function(p) {
+                    const textLine = p.innerText.trim();
+                    if (textLine && !textLine.includes('ARTWORK DESCRIPTION') && !textLine.includes('作品解说') && !textLine.includes('Audio Guide')) {
+                        const isZHLine = /[\u4e00-\u9fa5]/.test(textLine);
+                        if ((isChinese && isZHLine) || (!isChinese && !isZHLine)) {
+                            matchedLines.push(textLine);
+                        }
+                    }
+                });
+                speakText = matchedLines.join(" ");
+            }
+        }
+        
+        // Absolute safety backup if variables hit any system delay timeouts
+        if (!speakText || speakText.trim().length < 5) {
+            const currentIdx = (typeof window.activeArtworkIndex !== 'undefined') ? window.activeArtworkIndex : 0;
+            const currentArt = artworks[currentIdx] || {};
+            speakText = isChinese ? (currentArt.remarksZh || "") : (currentArt.remarksEn || "");
+        }
+        
+        // Fire the narration track out loud using the browser's native audio drivers
+        if (speakText && speakText.trim() !== "") {
+            const utterance = new SpeechSynthesisUtterance(speakText.trim());
+            utterance.lang = isChinese ? 'zh-CN' : 'en-US';
+            utterance.rate = 0.82; // Set soft, unhurried gallery tour narration delivery pace
+            
+            window.speechSynthesis.speak(utterance);
+            window.speechSynthesis.resume(); // Lift core sleep modes across mobile engines instantly
+        }
+    }, 250);
 }, true);
 
         const defaultCamPos = { x: 0, y: 1.6, z: 11 };
