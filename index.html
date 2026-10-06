@@ -993,89 +993,60 @@ if ('speechSynthesis' in window) {
     }
 }
 
-// Force-unlock the Audio System and isolate text strings matching the explicit clicked container ID node
+// Force-unlock the Audio System and play text matching the exact visible container layer natively
 window.addEventListener('click', function(e) {
-    // Target buttons cleanly across all duplicate modal layers
-    const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en') || 
-                          e.target.closest('[id*="tts-btn"]');
+    const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en');
     if (!targetButton) return;
     
-    e.stopPropagation(); // Prevents the 3D room canvas from intercepting the touch signal
+    e.stopPropagation(); // Stops the 3D scene from eating the click signal
     
-    // Clear out any active speech streams immediately
     if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
+        window.speechSynthesis.cancel(); // Force clear any frozen speech queues
     }
     
-    // Determine language by reading the end of the button ID track string
-    const buttonIdStr = targetButton.id || "";
-    const isChinese = buttonIdStr.includes('-zh') || buttonIdStr.endsWith('zh');
+    const isChinese = targetButton.id === 'tts-btn-zh';
     let speakText = "";
 
-    // 1. Locate the exact parent wrapper block containing the specific button clicked
-    const activePanelNode = targetButton.closest('.fixed') || 
-                             targetButton.closest('[class*="modal"]') || 
-                             targetButton.parentElement?.parentElement || 
-                             document.body;
-
-    // 2. High-Precision Property Scrape: Look for the specific numeric ID of this frame layout block
-    let targetIndex = 0;
+    // 1. Find the active container modal card holding the clicked button
+    const modalContainer = targetButton.closest('.fixed') || targetButton.closest('[class*="modal"]') || targetButton.parentElement?.parentElement || document.body;
     
-    // Check if the parent block maps to an active background data element tracker
-    if (activePanelNode && typeof window.activeArtworkIndex !== 'undefined') {
-        // Scrape the literal visible text lines inside this specific panel view to find the matching entry
-        const innerLayoutContent = activePanelNode.innerText || "";
-        const artworksList = window.ARTWORKS_DATA || [];
+    // 2. Fallback index sync: Grab the current background index variable safely
+    let selectedIndex = (typeof window.activeArtworkIndex !== 'undefined') ? window.activeArtworkIndex : 0;
+
+    // 3. High-Precision Parent Sync: Read the title or header directly inside THIS specific modal to identify its exact index
+    const artworks = window.ARTWORKS_DATA || [];
+    const localText = modalContainer.innerText || "";
+    
+    // Look through all 15 entries to find which one is uniquely written inside this active card layer
+    for (let i = 0; i < artworks.length; i++) {
+        const artItem = artworks[i];
+        const zhTitle = (artItem.titleZh || "").trim();
+        const enTitle = (artItem.titleEn || "").trim();
         
-        for (let i = 0; i < artworksList.length; i++) {
-            const currentArtItem = artworksList[i];
-            const zhTitleString = (currentArtItem.titleZh || "").trim();
-            const enTitleString = (currentArtItem.titleEn || "").trim();
-            
-            // Sync up when the unique painting title matches the specific open text card text
-            if ((zhTitleString && innerLayoutContent.includes(zhTitleString)) || 
-                (enTitleString && innerLayoutContent.includes(enTitleString))) {
-                targetIndex = i;
-                break;
-            }
+        // If this specific card container text matches this piece uniquely, lock onto its index number!
+        if (zhTitle && localText.indexOf(zhTitle) !== -1) {
+            selectedIndex = i;
+            // If it's a specific later artwork number, break immediately to prevent index 0 fallback loops
+            if (i > 0) break;
         }
     }
 
-    // 3. Fallback: Check if the button node itself is inside a frame structure with structural data indices
-    const catalogData = window.ARTWORKS_DATA || [];
-    const absoluteTargetArt = catalogData[targetIndex] || catalogData[0];
-
-    if (absoluteTargetArt) {
-        speakText = isChinese ? absoluteTargetArt.remarksZh : absoluteTargetArt.remarksEn;
+    // 4. Target the correct text description matching our true locked selection array index
+    const trueActiveArt = artworks[selectedIndex];
+    if (trueActiveArt) {
+        speakText = isChinese ? trueActiveArt.remarksZh : trueActiveArt.remarksEn;
     }
 
-    // 4. Fire the clean descriptive narration text via natural, smooth high-definition voice profiles
+    // 5. Fire the clean narrative track out loud using the phone's native speech drivers
     if (speakText && speakText.trim() !== "") {
         const utterance = new SpeechSynthesisUtterance(speakText.trim());
-        utterance.rate = 0.82; // Comfortable, unhurried tour guide delivery pace speed
-        
-        if ('speechSynthesis' in window) {
-            const activeVoices = window.speechSynthesis.getVoices() || [];
-            if (isChinese) {
-                utterance.lang = 'zh-CN';
-                const premiumZH = activeVoices.find(v => 
-                    (v.lang.startsWith('zh') || v.lang.includes('CN')) && 
-                    (v.name.includes('Google 普通话') || v.name.includes('Natural') || v.name.includes('Xiaoxiao') || v.name.includes('Premium') || v.name.includes('Tingting'))
-                );
-                if (premiumZH) utterance.voice = premiumZH;
-            } else {
-                utterance.lang = 'en-US';
-                const premiumEN = activeVoices.find(v => 
-                    v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Zira'))
-                );
-                if (premiumEN) utterance.voice = premiumEN;
-            }
-        }
+        utterance.lang = isChinese ? 'zh-CN' : 'en-US';
+        utterance.rate = 0.82; // Set soft, unhurried gallery tour narration delivery pace
         
         window.speechSynthesis.speak(utterance);
-        window.speechSynthesis.resume(); // Lift mobile sleep flags instantly on first touch
+        window.speechSynthesis.resume(); // Lift mobile sleep blocks instantly
     }
-}, true); // The 'true' capture flag forces this code to run before the HTML duplicates clash
+}, true);
 
         const defaultCamPos = { x: 0, y: 1.6, z: 11 };
         const defaultCamTarget = { x: 0, y: 1.6, z: 0 };
