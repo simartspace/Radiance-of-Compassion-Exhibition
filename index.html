@@ -981,12 +981,12 @@ window.addEventListener('click', function(e) {
     }
 }, true);
 
-// Force-unlock the Audio System and read ONLY the current visible text description paragraph
+// Force-unlock the Audio System and pull text details matching the visible screen text
 window.addEventListener('click', function(e) {
     const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en');
     if (!targetButton) return;
     
-    e.stopPropagation(); // Stops the 3D canvas from swallowing the click event
+    e.stopPropagation(); // Stops the 3D scene from eating the click
     
     // Safety clear to eliminate overlap loops
     if ('speechSynthesis' in window) {
@@ -996,20 +996,32 @@ window.addEventListener('click', function(e) {
     const isChinese = targetButton.id === 'tts-btn-zh';
     let speakText = "";
 
-    // 1. Core Data Sync: Read directly from the active template's database index if available
-    const dataIndex = window.activeArtworkIndex !== undefined ? window.activeArtworkIndex : 0;
-    const artworks = window.ARTWORKS_DATA || [];
-    const targetArt = artworks[dataIndex] || {};
+    // 1. Find the visible pop-up modal panel container
+    const modalContainer = targetButton.closest('.fixed') || targetButton.closest('[class*="modal"]') || document.body;
+    
+    // 2. Extract the actual active Heading Title text currently visible on the screen
+    const headingZH = modalContainer.querySelector('h2')?.innerText.trim() || "";
+    const headingEN = modalContainer.querySelector('h3')?.innerText.trim() || "";
+    const fallbackTitle = modalContainer.querySelector('.font-bold')?.innerText.trim() || "";
 
-    if (isChinese && targetArt.desc_zh) {
-        speakText = targetArt.desc_zh;
-    } else if (!isChinese && targetArt.desc_en) {
-        speakText = targetArt.desc_en;
+    const activeTitle = isChinese ? (headingZH || fallbackTitle) : (headingEN || fallbackTitle);
+    const artworks = window.ARTWORKS_DATA || [];
+    
+    // 3. Search the data matrix for an exact match to the visible screen title
+    if (activeTitle) {
+        const matchedArt = artworks.find(art => {
+            const nameZH = (art.name_zh || "").trim();
+            const nameEN = (art.name_en || "").trim();
+            return activeTitle.includes(nameZH) || activeTitle.includes(nameEN) || nameZH.includes(activeTitle) || nameEN.includes(activeTitle);
+        });
+
+        if (matchedArt) {
+            speakText = isChinese ? matchedArt.desc_zh : matchedArt.desc_en;
+        }
     }
 
-    // 2. DOM Screen Fallback: If background tracking data isn't ready, scrape the visible panel text directly
+    // 4. Smart Scrape Fallback: If background database fails, read directly from the paragraph elements
     if (!speakText || speakText.trim() === "") {
-        const modalContainer = targetButton.closest('.fixed') || targetButton.closest('[class*="modal"]') || document.body;
         const descBlock = modalContainer.querySelector('.artwork-description') || 
                           modalContainer.querySelector('[class*="description"]') || 
                           modalContainer.querySelector('h4, .font-bold')?.nextElementSibling;
@@ -1031,7 +1043,7 @@ window.addEventListener('click', function(e) {
         }
     }
 
-    // 3. Absolute Visual Fallbacks if both tracking indexes and DOM text structures fail to return values
+    // 5. Absolute hardcoded backstop if all extraction methods timeout
     if (!speakText || speakText.trim().length < 5) {
         if (isChinese) {
             speakText = "文殊菩萨为智慧之化身。右手持般若慧剑，断除一切无明、烦恼与执着；左手持莲花，花上安放《般若经》，象征智慧之宝藏。";
@@ -1040,33 +1052,32 @@ window.addEventListener('click', function(e) {
         }
     }
 
-    // 4. Fire the clean narration track out loud with High-Definition Native Voices
+    // 6. Fire the narration track using your browser's premium localized speech assets
     if (speakText.trim() !== "") {
         const utterance = new SpeechSynthesisUtterance(speakText);
-        utterance.rate = 0.82; // Set an unhurried, comfortable exhibition guide reading pace
+        utterance.rate = 0.82; // Unhurried gallery tour delivery pace
         
         if ('speechSynthesis' in window) {
             const activeVoices = window.speechSynthesis.getVoices() || [];
             
             if (isChinese) {
                 utterance.lang = 'zh-CN';
-                // Lock onto modern natural human speech inflection patterns (Google/Xiaoxiao/Tingting)
                 const premiumZH = activeVoices.find(v => 
                     (v.lang.startsWith('zh') || v.lang.includes('CN')) && 
-                    (v.name.includes('Google 普通话') || v.name.includes('Natural') || v.name.includes('Xiaoxiao') || v.name.includes('Premium') || v.name.includes('Tingting') || v.name.includes('Lili'))
+                    (v.name.includes('Google 普通话') || v.name.includes('Natural') || v.name.includes('Xiaoxiao') || v.name.includes('Premium') || v.name.includes('Tingting'))
                 );
                 if (premiumZH) utterance.voice = premiumZH;
             } else {
                 utterance.lang = 'en-US';
                 const premiumEN = activeVoices.find(v => 
-                    v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Zira') || v.name.includes('Samantha'))
+                    v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Zira'))
                 );
                 if (premiumEN) utterance.voice = premiumEN;
             }
         }
         
         window.speechSynthesis.speak(utterance);
-        window.speechSynthesis.resume(); // Lift mobile background sleep restrictions instantly
+        window.speechSynthesis.resume(); // Unlocks mobile sleep flags
     }
 }, true);
 
