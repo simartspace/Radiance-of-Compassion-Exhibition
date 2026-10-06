@@ -920,19 +920,34 @@
         let activeArtworkIndex = 0;
         let isZoomed = false;
         let ownerMode = false; // Locked by default for security
-  let ownerMode = false; // Locked by default for security
-// --- SAFELY WIPE LOCK SCREEN WITHOUT BREAKING THE 3D SCENE ---
+ 
+// --- FORCE EXTRACT CATALOG AND KILL LOADING SCREENS ---
+const globalBypass = document.createElement('style');
+globalBypass.innerHTML = `
+    #owner-overlay, .owner-verification, #loading-screen, .loader, [id*="loading"], [class*="loading"] { 
+        display: none !important; 
+        visibility: hidden !important; 
+        pointer-events: none !important; 
+        opacity: 0 !important; 
+    }
+    body, html { 
+        overflow: auto !important; 
+        background: #ffffff !important; 
+    }
+    #main-content, #app, .catalog-container, main {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+`;
+document.head.appendChild(globalBypass);
+
 document.addEventListener("DOMContentLoaded", function() {
-    // Wait half a second for the 3D room, artwork frames, and cameras to load safely first
-    setTimeout(function() {
-        const lockScreen = document.getElementById('owner-overlay') || document.querySelector('.owner-verification');
-        if (lockScreen) {
-            lockScreen.style.display = 'none';
-            lockScreen.style.pointerEvents = 'none';
-            lockScreen.style.opacity = '0';
-            lockScreen.remove(); // Safely throw it away
-        }
-    }, 500); 
+    // Instantly wipe out all blockers from the HTML structure
+    ['owner-overlay', 'loading-screen'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+    });
 });
 
 // Force-unlock the Audio System when visitors click either text-to-speech button
@@ -940,9 +955,8 @@ window.addEventListener('click', function(e) {
     const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en');
     if (!targetButton) return;
     
-    e.stopPropagation(); // Keep the 3D frame engine from swallowing the click
+    e.stopPropagation(); 
     
-    // Reset browser audio contexts
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         window.speechSynthesis.resume();
