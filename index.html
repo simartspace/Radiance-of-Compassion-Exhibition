@@ -993,98 +993,91 @@ if ('speechSynthesis' in window) {
     }
 }
 
-// Force-unlock the Audio System and match the narration text directly to the visible screen title
+// Force-unlock the Audio System and pull text directly relative to the active clicked container block
 window.addEventListener('click', function(e) {
     const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en');
     if (!targetButton) return;
     
-    e.stopPropagation(); // Stops the 3D scene from eating the click signal
+    e.stopPropagation(); // Stops the 3D scene from swallowing the click event
     
+    // Clear out active speech loops immediately
     if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Force clear any frozen speech queues
+        window.speechSynthesis.cancel();
     }
     
     const isChinese = targetButton.id === 'tts-btn-zh';
+    let speakText = "";
+
+    // 1. Locate the active text panel container by looking straight upwards from the button
+    const panelContainer = targetButton.closest('.fixed') || targetButton.closest('[class*="modal"]') || targetButton.parentElement?.parentElement || document.body;
     
-    // Wait exactly 100 milliseconds for the panel title to safely render on the screen
-    setTimeout(function() {
-        let speakText = "";
-
-        // 1. Locate the active viewing panel fixed on the screen layout
-        const modalContainer = targetButton.closest('.fixed') || targetButton.closest('[class*="modal"]') || document.body;
+    // 2. Extract every single bit of readable text strings inside this specific panel card layer
+    const parentTextText = panelContainer.innerText || "";
+    const artworks = window.ARTWORKS_DATA || [];
+    
+    // 3. Match the actual visible title strings directly against your 15 database records
+    let matchedArt = null;
+    for (let i = 0; i < artworks.length; i++) {
+        const art = artworks[i];
+        const zhName = (art.titleZh || "").trim();
+        const enName = (art.titleEn || "").trim();
         
-        // 2. Read the literal titles currently visible to the visitor on the card
-        const visibleZH = modalContainer.querySelector('h2')?.innerText.trim() || "";
-        const visibleEN = modalContainer.querySelector('h3')?.innerText.trim() || "";
-        const fallbackTitle = modalContainer.querySelector('.font-bold, h4')?.innerText.trim() || "";
+        // Check if this specific artwork's unique name exists anywhere inside the open panel
+        if ((zhName && parentTextText.includes(zhName)) || (enName && parentTextText.includes(enName))) {
+            matchedArt = art;
+            break; 
+        }
+    }
 
-        const activeTitle = isChinese ? (visibleZH || fallbackTitle) : (visibleEN || fallbackTitle);
-        const artworks = window.ARTWORKS_DATA || [];
+    // 4. Bind the correct matching description remarks to the text-to-speech engine
+    if (matchedArt) {
+        speakText = isChinese ? matchedArt.remarksZh : matchedArt.remarksEn;
+    }
+
+    // 5. Emergency DOM filter if text matching experiences buffering latency
+    if (!speakText || speakText.trim() === "") {
+        const paragraphs = panelContainer.querySelectorAll('p, div, span');
+        let rawLines = [];
         
-        // 3. Search your 15-artwork data list for a match to the text showing on screen
-        if (activeTitle) {
-            const matchedArt = artworks.find(function(art) {
-                const nameZH = (art.titleZh || "").trim();
-                const nameEN = (art.titleEn || "").trim();
-                return activeTitle.includes(nameZH) || activeTitle.includes(nameEN) || 
-                       nameZH.includes(activeTitle) || nameEN.includes(activeTitle);
-            });
-
-            if (matchedArt) {
-                speakText = isChinese ? matchedArt.remarksZh : matchedArt.remarksEn;
-            }
-        }
-
-        // 4. Smart Scrape Fallback: If title matching fails, pull text lines directly from paragraphs
-        if (!speakText || speakText.trim() === "") {
-            const descBlock = modalContainer.querySelector('.artwork-description') || 
-                              modalContainer.querySelector('[class*="description"]') || 
-                              modalContainer.querySelector('h4, .font-bold')?.nextElementSibling;
-
-            if (descBlock) {
-                const paragraphs = descBlock.querySelectorAll('p, div');
-                let matchedLines = [];
-                
-                paragraphs.forEach(function(p) {
-                    const textLine = p.innerText.trim();
-                    if (textLine && !textLine.includes('ARTWORK DESCRIPTION') && !textLine.includes('作品解说') && !textLine.includes('Audio Guide')) {
-                        const isZHLine = /[\u4e00-\u9fa5]/.test(textLine);
-                        if ((isChinese && isZHLine) || (!isChinese && !isZHLine)) {
-                            matchedLines.push(textLine);
-                        }
-                    }
-                });
-                speakText = matchedLines.join(" ");
-            }
-        }
-
-        // 5. Fire the narration track out loud using premium natural voices
-        if (speakText && speakText.trim() !== "") {
-            const utterance = new SpeechSynthesisUtterance(speakText.trim());
-            utterance.rate = 0.82; // Set soft, unhurried gallery tour narration delivery speed
-            
-            if ('speechSynthesis' in window) {
-                const activeVoices = window.speechSynthesis.getVoices() || [];
-                if (isChinese) {
-                    utterance.lang = 'zh-CN';
-                    const premiumZH = activeVoices.find(v => 
-                        (v.lang.startsWith('zh') || v.lang.includes('CN')) && 
-                        (v.name.includes('Google 普通话') || v.name.includes('Natural') || v.name.includes('Xiaoxiao') || v.name.includes('Premium') || v.name.includes('Tingting'))
-                    );
-                    if (premiumZH) utterance.voice = premiumZH;
-                } else {
-                    utterance.lang = 'en-US';
-                    const premiumEN = activeVoices.find(v => 
-                        v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Zira'))
-                    );
-                    if (premiumEN) utterance.voice = premiumEN;
+        paragraphs.forEach(function(p) {
+            const line = p.innerText.trim();
+            if (line && !line.includes('ARTWORK DESCRIPTION') && !line.includes('作品解说') && !line.includes('Audio Guide')) {
+                const isZHLine = /[\u4e00-\u9fa5]/.test(line);
+                if ((isChinese && isZHLine) || (!isChinese && !isZHLine)) {
+                    rawLines.push(line);
                 }
             }
-            
-            window.speechSynthesis.speak(utterance);
-            window.speechSynthesis.resume(); // Lift mobile sleep restrictions instantly
+        });
+        speakText = rawLines.join(" ");
+    }
+
+    // 6. Fire the clean narrative track out loud using natural voice patterns
+    if (speakText && speakText.trim() !== "") {
+        const utterance = new SpeechSynthesisUtterance(speakText.trim());
+        utterance.rate = 0.82; // Set soft, unhurried gallery tour narration delivery speed
+        
+        if ('speechSynthesis' in window) {
+            const activeVoices = window.speechSynthesis.getVoices() || [];
+            if (isChinese) {
+                utterance.lang = 'zh-CN';
+                // Lock onto modern natural human speech accents (Google 普通话/Xiaoxiao/Tingting)
+                const premiumZH = activeVoices.find(v => 
+                    (v.lang.startsWith('zh') || v.lang.includes('CN')) && 
+                    (v.name.includes('Google 普通话') || v.name.includes('Natural') || v.name.includes('Xiaoxiao') || v.name.includes('Premium') || v.name.includes('Tingting'))
+                );
+                if (premiumZH) utterance.voice = premiumZH;
+            } else {
+                utterance.lang = 'en-US';
+                const premiumEN = activeVoices.find(v => 
+                    v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Zira'))
+                );
+                if (premiumEN) utterance.voice = premiumEN;
+            }
         }
-    }, 100);
+        
+        window.speechSynthesis.speak(utterance);
+        window.speechSynthesis.resume(); // Lift mobile sleep restrictions instantly
+    }
 }, true);
 
         const defaultCamPos = { x: 0, y: 1.6, z: 11 };
