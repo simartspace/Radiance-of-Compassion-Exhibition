@@ -985,14 +985,14 @@ window.addEventListener('click', function(e) {
     }
 }, true);
 
-// Force-unlock the Audio System and match description arrays to the visible screen title text layout
+// Force-unlock the Audio System and extract the visible description paragraph directly from the modal box
 window.addEventListener('click', function(e) {
     const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en');
     if (!targetButton) return;
     
     e.stopPropagation(); // Stops the 3D scene from eating the click
     
-    // Safety clear to completely eliminate audio overlap stutters
+    // Safety clear to completely eliminate audio overlap loops
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
     }
@@ -1000,67 +1000,59 @@ window.addEventListener('click', function(e) {
     const isChinese = targetButton.id === 'tts-btn-zh';
     let speakText = "";
 
-    // 1. Locate the active viewing panel layout fixed on the screen
+    // 1. Locate the active viewing panel fixed on the screen layout
     const modalContainer = targetButton.closest('.fixed') || targetButton.closest('[class*="modal"]') || document.body;
     
-    // 2. Read the literal active Heading Text titles currently visible to the visitor
-    const headingZH = modalContainer.querySelector('h2')?.innerText.trim() || "";
-    const headingEN = modalContainer.querySelector('h3')?.innerText.trim() || "";
-    const fallbackTitle = modalContainer.querySelector('.font-bold, h4')?.innerText.trim() || "";
+    // 2. Target the exact HTML wrapper containing your bilingual artwork description paragraphs
+    const descBlock = modalContainer.querySelector('.artwork-description') || 
+                      modalContainer.querySelector('[class*="description"]') || 
+                      modalContainer.querySelector('h4, .font-bold')?.nextElementSibling;
 
-    const activeTitle = isChinese ? (headingZH || fallbackTitle) : (headingEN || fallbackTitle);
-    const artworks = window.ARTWORKS_DATA || [];
-    
-    // 3. Search the master configuration array lists for a match to the visible screen title text strings
-    if (activeTitle) {
-        const matchedArt = artworks.find(art => {
-            const nameZH = (art.name_zh || "").trim();
-            const nameEN = (art.name_en || "").trim();
-            // Match structural naming combinations safely
-            return activeTitle.includes(nameZH) || activeTitle.includes(nameEN) || 
-                   nameZH.includes(activeTitle) || nameEN.includes(activeTitle);
+    if (descBlock) {
+        // Collect every single paragraph line inside the description layout box
+        const paragraphs = descBlock.querySelectorAll('p, div, span');
+        let cleanLines = [];
+        
+        paragraphs.forEach(p => {
+            const line = p.innerText.trim();
+            // Strict filtering rules to skip technical headers, file values, and navigation labels
+            if (line && 
+                !line.startsWith("ARTWORK") && 
+                !line.startsWith("NO.") && 
+                !line.startsWith("作品解说") && 
+                !line.includes("Audio Guide") && 
+                !line.includes("点击放大") && 
+                !line.includes("Click to Zoom") && 
+                !line.includes("Medium /") && 
+                !line.includes("Dimensions /") && 
+                !line.includes("Year /") && 
+                !line.includes("Artist /")) {
+                cleanLines.push(line);
+            }
         });
 
-        if (matchedArt) {
-            speakText = isChinese ? matchedArt.desc_zh : matchedArt.desc_en;
-        }
-    }
+        // 3. Separate Chinese character blocks from English sentences dynamically
+        const mergedText = cleanLines.join(" ");
+        const chunks = mergedText.split(/([.!?。区域！？\n])/);
+        let validSentences = [];
 
-    // 4. Fallback DOM Parsing Module: If data maps have layout variations, read sentences right out of paragraphs
-    if (!speakText || speakText.trim() === "") {
-        const descBlock = modalContainer.querySelector('.artwork-description') || 
-                          modalContainer.querySelector('[class*="description"]') || 
-                          modalContainer.querySelector('h4, .font-bold')?.nextElementSibling;
-
-        if (descBlock) {
-            const paragraphs = descBlock.querySelectorAll('p, div');
-            let matchedLines = [];
+        for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+            if (!chunk || chunk.trim().length < 2) continue;
             
-            paragraphs.forEach(p => {
-                const textLine = p.innerText.trim();
-                // Filter out navigation controls, year labels, formatting headers, and dimensions context strings
-                if (textLine && !textLine.includes('ARTWORK DESCRIPTION') && !textLine.includes('作品解说') && !textLine.includes('Audio Guide')) {
-                    const isZHLine = /[\u4e00-\u9fa5]/.test(textLine);
-                    if ((isChinese && isZHLine) || (!isChinese && !isZHLine)) {
-                        matchedLines.push(textLine);
-                    }
-                }
-            });
-            speakText = matchedLines.join(" ");
+            // Check for native Chinese characters versus regular alphabets
+            const hasChineseCharacters = /[\u4e00-\u9fa5]/.test(chunk);
+            if (isChinese && hasChineseCharacters) {
+                validSentences.push(chunk);
+            } else if (!isChinese && !hasChineseCharacters) {
+                validSentences.push(chunk);
+            }
         }
+        speakText = validSentences.join("").trim();
     }
 
-    // 5. Hardcoded safety backstop string layers matching your exhibition details
-    if (!speakText || speakText.trim().length < 5) {
-        if (isChinese) {
-            speakText = "文殊菩萨为智慧之化身。右手持般若慧剑，断除一切无明、烦恼与执着；左手持莲花，花上安放《般若经》，象征智慧之宝藏。";
-        } else {
-            speakText = "Bodhisattva of Wisdom. Right hand holds the Sword of Wisdom, cutting through ignorance, afflictions, and deluded attachments. Left hand holds a lotus resting the Prajna-sutra (Perfection of Wisdom Sutra) symbolizing the treasure of wisdom.";
-        }
-    }
-
-    // 6. Execute the final clean narration guide path via high-definition browser voice components
-    if (speakText.trim() !== "") {
+    // 4. Fire the clean description narration track via high-definition browser voice components
+    if (speakText && speakText.trim() !== "") {
         const utterance = new SpeechSynthesisUtterance(speakText);
         utterance.rate = 0.82; // Set soft, unhurried gallery tour narration delivery speed
         
@@ -1083,7 +1075,7 @@ window.addEventListener('click', function(e) {
         }
         
         window.speechSynthesis.speak(utterance);
-        window.speechSynthesis.resume(); // Prevent mobile background sleep canvas disconnects
+        window.speechSynthesis.resume(); // Prevent mobile background canvas sleep disconnects
     }
 }, true);
 
