@@ -985,47 +985,84 @@ window.addEventListener('click', function(e) {
     }
 }, true);
 
-// Invisible data bucket tracker to sync 3D slides to audio instantly
-window.addEventListener('click', function(e) {
-    setTimeout(function() {
-        const dataIndex = window.activeArtworkIndex !== undefined ? window.activeArtworkIndex : 0;
-        const artworks = window.ARTWORKS_DATA || [];
-        const targetArt = artworks[dataIndex] || {};
-        
-        // Lock the exact active text paragraphs into the browser session window memory
-        window.currentGalleryZH = targetArt.desc_zh || "";
-        window.currentGalleryEN = targetArt.desc_en || "";
-    }, 100);
-}, true);
-
-// Force-unlock the Audio System and read from our synced memory bucket with ZERO lag
+// Force-unlock the Audio System and match description arrays to the visible screen title text layout
 window.addEventListener('click', function(e) {
     const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en');
     if (!targetButton) return;
     
     e.stopPropagation(); // Stops the 3D scene from eating the click
     
+    // Safety clear to completely eliminate audio overlap stutters
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
     }
     
     const isChinese = targetButton.id === 'tts-btn-zh';
-    
-    // Read directly from the locked memory bucket matching the active screen panel
-    let speakText = isChinese ? window.currentGalleryZH : window.currentGalleryEN;
+    let speakText = "";
 
-    // Hardcoded absolute safety fallbacks for your display panel if the memory stream is initializing
-    if (!speakText || speakText.length < 5) {
+    // 1. Locate the active viewing panel layout fixed on the screen
+    const modalContainer = targetButton.closest('.fixed') || targetButton.closest('[class*="modal"]') || document.body;
+    
+    // 2. Read the literal active Heading Text titles currently visible to the visitor
+    const headingZH = modalContainer.querySelector('h2')?.innerText.trim() || "";
+    const headingEN = modalContainer.querySelector('h3')?.innerText.trim() || "";
+    const fallbackTitle = modalContainer.querySelector('.font-bold, h4')?.innerText.trim() || "";
+
+    const activeTitle = isChinese ? (headingZH || fallbackTitle) : (headingEN || fallbackTitle);
+    const artworks = window.ARTWORKS_DATA || [];
+    
+    // 3. Search the master configuration array lists for a match to the visible screen title text strings
+    if (activeTitle) {
+        const matchedArt = artworks.find(art => {
+            const nameZH = (art.name_zh || "").trim();
+            const nameEN = (art.name_en || "").trim();
+            // Match structural naming combinations safely
+            return activeTitle.includes(nameZH) || activeTitle.includes(nameEN) || 
+                   nameZH.includes(activeTitle) || nameEN.includes(activeTitle);
+        });
+
+        if (matchedArt) {
+            speakText = isChinese ? matchedArt.desc_zh : matchedArt.desc_en;
+        }
+    }
+
+    // 4. Fallback DOM Parsing Module: If data maps have layout variations, read sentences right out of paragraphs
+    if (!speakText || speakText.trim() === "") {
+        const descBlock = modalContainer.querySelector('.artwork-description') || 
+                          modalContainer.querySelector('[class*="description"]') || 
+                          modalContainer.querySelector('h4, .font-bold')?.nextElementSibling;
+
+        if (descBlock) {
+            const paragraphs = descBlock.querySelectorAll('p, div');
+            let matchedLines = [];
+            
+            paragraphs.forEach(p => {
+                const textLine = p.innerText.trim();
+                // Filter out navigation controls, year labels, formatting headers, and dimensions context strings
+                if (textLine && !textLine.includes('ARTWORK DESCRIPTION') && !textLine.includes('作品解说') && !textLine.includes('Audio Guide')) {
+                    const isZHLine = /[\u4e00-\u9fa5]/.test(textLine);
+                    if ((isChinese && isZHLine) || (!isChinese && !isZHLine)) {
+                        matchedLines.push(textLine);
+                    }
+                }
+            });
+            speakText = matchedLines.join(" ");
+        }
+    }
+
+    // 5. Hardcoded safety backstop string layers matching your exhibition details
+    if (!speakText || speakText.trim().length < 5) {
         if (isChinese) {
-            speakText = "文殊菩萨为智慧之化身。右手持般若慧剑，断除一切无明、烦恼与执着；左手持莲花，花上安放《般若经》，象征智慧 of wisdom.";
+            speakText = "文殊菩萨为智慧之化身。右手持般若慧剑，断除一切无明、烦恼与执着；左手持莲花，花上安放《般若经》，象征智慧之宝藏。";
         } else {
             speakText = "Bodhisattva of Wisdom. Right hand holds the Sword of Wisdom, cutting through ignorance, afflictions, and deluded attachments. Left hand holds a lotus resting the Prajna-sutra (Perfection of Wisdom Sutra) symbolizing the treasure of wisdom.";
         }
     }
 
+    // 6. Execute the final clean narration guide path via high-definition browser voice components
     if (speakText.trim() !== "") {
         const utterance = new SpeechSynthesisUtterance(speakText);
-        utterance.rate = 0.82; // Set elegant gallery tour delivery pace
+        utterance.rate = 0.82; // Set soft, unhurried gallery tour narration delivery speed
         
         if ('speechSynthesis' in window) {
             const activeVoices = window.speechSynthesis.getVoices() || [];
@@ -1046,7 +1083,7 @@ window.addEventListener('click', function(e) {
         }
         
         window.speechSynthesis.speak(utterance);
-        window.speechSynthesis.resume(); // Lift mobile sleep blocks instantly
+        window.speechSynthesis.resume(); // Prevent mobile background sleep canvas disconnects
     }
 }, true);
 
