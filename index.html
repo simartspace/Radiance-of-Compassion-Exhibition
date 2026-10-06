@@ -48,11 +48,19 @@
                     overflow: auto !important; 
                     background: #ffffff !important; 
                 }
+
                 #main-content, #app, .catalog-container, main {
                     display: block !important;
                     visibility: visible !important;
                     opacity: 1 !important;
                 }
+ /* Force exhibition action buttons to be instantly clickable over the 3D background */
+   #tts-btn-zh, #tts-btn-en, .action-btn, button, a {
+       position: relative !important;
+       z-index: 999999 !important;
+       pointer-events: auto !important;
+       cursor: pointer !important;
+   }
             `;
             document.head.appendChild(visualFix);
 
@@ -964,6 +972,43 @@
         let activeArtworkIndex = 0;
         let isZoomed = false;
         let ownerMode = false; // Locked by default for security
+
+// Force-unlock the Audio System when visitors click either text-to-speech button
+window.addEventListener('click', function(e) {
+    const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en');
+    if (!targetButton) return;
+    
+    e.stopPropagation(); // Stops the 3D scene from eating the click
+    
+    // Safety wake-up call for frozen browser engines
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+    }
+    
+    const dataIndex = window.activeArtworkIndex !== undefined ? window.activeArtworkIndex : 0;
+    const artworks = window.ARTWORKS_DATA || [];
+    const targetArt = artworks[dataIndex] || {};
+    const isChinese = targetButton.id === 'tts-btn-zh';
+    
+    let speakText = "";
+    
+    // Smart Fallback Detection: If data properties aren't ready, announce the official title
+    if (isChinese) {
+        speakText = targetArt.desc_zh || targetArt.name_zh || "欢迎来到慈光常書佛菩薩聖像藝術展。药师佛，材质绢本水彩。";
+    } else {
+        speakText = targetArt.desc_en || targetArt.name_en || "Welcome to Radiance of Compassion Contemporary Chinese Buddhist Art Exhibition by Sue Loh. Medicine Buddha, Watercolor on Satin silk.";
+    }
+
+    if (speakText.trim() !== "") {
+        const utterance = new SpeechSynthesisUtterance(speakText);
+        utterance.lang = isChinese ? 'zh-CN' : 'en-US';
+        utterance.rate = 0.85; // Elegant gallery narration speed
+        
+        // Critical Mobile Fix: Wakes up mobile engines out of background sleep modes
+        window.speechSynthesis.speak(utterance);
+        window.speechSynthesis.resume();
+    }
+}, true);
  
         const defaultCamPos = { x: 0, y: 1.6, z: 11 };
         const defaultCamTarget = { x: 0, y: 1.6, z: 0 };
