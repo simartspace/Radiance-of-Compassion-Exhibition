@@ -973,6 +973,14 @@
         let isZoomed = false;
         let ownerMode = false; // Locked by default for security
 
+// Automatically stop all audio narration the exact moment a visitor closes the detail panel
+window.addEventListener('click', function(e) {
+    const closeButton = e.target.closest('button[class*="close"], .absolute.top-4.right-4, button:has(.fa-xmark)');
+    if (closeButton && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+    }
+}, true);
+
 // Force-unlock the Audio System and extract description text directly from the active view screen
 window.addEventListener('click', function(e) {
     const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en');
@@ -1026,11 +1034,37 @@ window.addEventListener('click', function(e) {
         }
     }
 
-    // 4. Run the clean narration track out loud to your visitor
+    // 4. Run the clean narration track out loud with Premium Voice Selection
     if (speakText.trim() !== "") {
         const utterance = new SpeechSynthesisUtterance(speakText);
-        utterance.lang = isChinese ? 'zh-CN' : 'en-US';
         utterance.rate = 0.85; // Elegant gallery narration speed
+
+        if (isChinese) {
+            utterance.lang = 'zh-CN';
+            
+            // Search the browser cache for premium natural-sounding Chinese voice profiles
+            if ('speechSynthesis' in window) {
+                const voices = window.speechSynthesis.getVoices();
+                const premiumChineseVoice = voices.find(v => 
+                    (v.lang.includes('zh-CN') || v.lang.includes('zh_CN')) && 
+                    (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Xiaoxiao') || v.name.includes('Huihui'))
+                );
+                if (premiumChineseVoice) {
+                    utterance.voice = premiumChineseVoice;
+                }
+            }
+        } else {
+            utterance.lang = 'en-US';
+            if ('speechSynthesis' in window) {
+                const voices = window.speechSynthesis.getVoices();
+                const premiumEnglishVoice = voices.find(v => 
+                    v.lang.includes('en-US') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium'))
+                );
+                if (premiumEnglishVoice) {
+                    utterance.voice = premiumEnglishVoice;
+                }
+            }
+        }
         
         window.speechSynthesis.speak(utterance);
         window.speechSynthesis.resume(); // Unlocks mobile background sleep flags
