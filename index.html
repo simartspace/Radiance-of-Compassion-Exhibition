@@ -975,8 +975,8 @@
 
 // Automatically stop all audio narration the exact moment a visitor closes the detail panel
 window.addEventListener('click', function(e) {
-    const closeButton = e.target.closest('button[class*="close"], .absolute.top-4.right-4, button:has(.fa-xmark)');
-    if (closeButton && 'speechSynthesis' in window) {
+    const closeElement = e.target.closest('button[class*="close"], .absolute.top-4.right-4, button:has(.fa-xmark), .fa-xmark');
+    if (closeElement && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
     }
 }, true);
@@ -988,7 +988,7 @@ window.addEventListener('click', function(e) {
     
     e.stopPropagation(); // Stops the 3D scene from eating the click
     
-    // Safety wake-up call for frozen browser engines
+    // Safety clear to completely eliminate welcome fallout loops
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
     }
@@ -996,37 +996,47 @@ window.addEventListener('click', function(e) {
     const isChinese = targetButton.id === 'tts-btn-zh';
     let speakText = "";
 
-    // 1. Locate the description area on the screen dynamically
-    const modalContainer = targetButton.closest('.fixed') || targetButton.closest('[class*="modal"]') || document.body;
+    // 1. Locate the description section wrapper by navigating backwards from the button target
+    const parentContainer = targetButton.closest('.fixed') || targetButton.closest('[class*="modal"]') || document.body;
     
-    // 2. Extract the clean text directly from your HTML layout paragraphs
-    const descSection = modalContainer.querySelector('.artwork-description') || 
-                        modalContainer.querySelector('[class*="description"]') || 
-                        modalContainer.querySelector('div:has(> p)');
+    // Find the specific panel below the "ARTWORK DESCRIPTION" heading title line
+    const descBlock = parentContainer.querySelector('.artwork-description') || 
+                      parentContainer.querySelector('[class*="description"]') || 
+                      parentContainer.querySelector('h4, .font-bold')?.nextElementSibling;
 
-    if (descSection) {
-        const paragraphs = descSection.querySelectorAll('p, div');
-        let zhTexts = [];
-        let enTexts = [];
-
+    if (descBlock) {
+        // Read text segments specifically inside paragraph blocks to ignore titles or labels
+        const paragraphs = descBlock.querySelectorAll('p, div');
+        let textSegments = [];
+        
         paragraphs.forEach(p => {
-            const text = p.innerText.trim();
-            if (text && !text.startsWith("ARTWORK") && !text.startsWith("作品解说") && !text.includes("Audio Guide")) {
-                // Separate Chinese text strings from English text strings automatically
-                if (/[\u4e00-\u9fa5]/.test(text)) {
-                    zhTexts.push(text);
-                } else {
-                    enTexts.push(text);
-                }
+            const innerStr = p.innerText.trim();
+            // Strict visual filtering rules to prune out unwanted structural context completely
+            if (innerStr && !innerStr.includes('ARTWORK DESCRIPTION') && !innerStr.includes('作品解说') && !innerStr.includes('Audio Guide')) {
+                textSegments.push(innerStr);
             }
         });
 
-        // Use only the description text matching the button clicked
-        speakText = isChinese ? zhTexts.join(" ") : enTexts.join(" ");
+        // Loop through raw text to extract language based on localized character profiles
+        const joinedStr = textSegments.join(" ");
+        const sentences = joinedStr.split(/([.!?。！？])/);
+        let currentLangSentences = [];
+
+        for (let i = 0; i < sentences.length; i++) {
+            const sentence = sentences[i];
+            if (!sentence) continue;
+            const hasChinese = /[\u4e00-\u9fa5]/.exec(sentence);
+            if (isChinese && hasChinese) {
+                currentLangSentences.push(sentence);
+            } else if (!isChinese && !hasChinese) {
+                currentLangSentences.push(sentence);
+            }
+        }
+        speakText = currentLangSentences.join("").trim();
     }
 
-    // 3. Perfect fallback safety nets using your exact text in case data is loading slowly
-    if (!speakText || speakText.trim() === "" || speakText.length < 5) {
+    // 2. Absolute matching backstops to handle text parsing latency
+    if (!speakText || speakText.length < 5) {
         if (isChinese) {
             speakText = "文殊菩萨为智慧之化身。右手持般若慧剑，断除一切无明、烦恼与执着；左手持莲花，花上安放《般若经》，象征智慧之宝藏。";
         } else {
@@ -1034,40 +1044,33 @@ window.addEventListener('click', function(e) {
         }
     }
 
-    // 4. Run the clean narration track out loud with Premium Voice Selection
+    // 3. Mount text to the device's underlying Speech Synthesis asset drivers
     if (speakText.trim() !== "") {
         const utterance = new SpeechSynthesisUtterance(speakText);
-        utterance.rate = 0.85; // Elegant gallery narration speed
-
-        if (isChinese) {
-            utterance.lang = 'zh-CN';
+        utterance.rate = 0.82; // Set soft, unhurried gallery tour guide delivery pace
+        
+        if ('speechSynthesis' in window) {
+            const activeVoices = window.speechSynthesis.getVoices() || [];
             
-            // Search the browser cache for premium natural-sounding Chinese voice profiles
-            if ('speechSynthesis' in window) {
-                const voices = window.speechSynthesis.getVoices();
-                const premiumChineseVoice = voices.find(v => 
-                    (v.lang.includes('zh-CN') || v.lang.includes('zh_CN')) && 
-                    (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Xiaoxiao') || v.name.includes('Huihui'))
+            if (isChinese) {
+                utterance.lang = 'zh-CN';
+                // Force load localized natural human voice accents over the default machine voice
+                const premiumZH = activeVoices.find(v => 
+                    (v.lang.startsWith('zh') || v.lang.includes('CN')) && 
+                    (v.name.includes('Google 普通话') || v.name.includes('Natural') || v.name.includes('Xiaoxiao') || v.name.includes('Premium') || v.name.includes('Tingting'))
                 );
-                if (premiumChineseVoice) {
-                    utterance.voice = premiumChineseVoice;
-                }
-            }
-        } else {
-            utterance.lang = 'en-US';
-            if ('speechSynthesis' in window) {
-                const voices = window.speechSynthesis.getVoices();
-                const premiumEnglishVoice = voices.find(v => 
-                    v.lang.includes('en-US') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium'))
+                if (premiumZH) utterance.voice = premiumZH;
+            } else {
+                utterance.lang = 'en-US';
+                const premiumEN = activeVoices.find(v => 
+                    v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Zira'))
                 );
-                if (premiumEnglishVoice) {
-                    utterance.voice = premiumEnglishVoice;
-                }
+                if (premiumEN) utterance.voice = premiumEN;
             }
         }
         
         window.speechSynthesis.speak(utterance);
-        window.speechSynthesis.resume(); // Unlocks mobile background sleep flags
+        window.speechSynthesis.resume(); // Lift core sleep modes across mobile engines
     }
 }, true);
  
