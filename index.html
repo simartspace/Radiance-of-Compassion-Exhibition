@@ -985,6 +985,14 @@ window.addEventListener('click', function(e) {
     }
 }, true);
 
+// Pre-load and wake up premium high-definition browser voice tables on page boot
+if ('speechSynthesis' in window) {
+    window.speechSynthesis.getVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = function() { window.speechSynthesis.getVoices(); };
+    }
+}
+
 // Force-unlock the Audio System and extract the visible description paragraph directly from the modal box
 window.addEventListener('click', function(e) {
     const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en');
@@ -1051,7 +1059,7 @@ window.addEventListener('click', function(e) {
         speakText = validSentences.join("").trim();
     }
 
-    // 4. Fire the clean description narration track via high-definition browser voice components
+    // 4. Fire the clean description narration track out loud via high-definition browser voice components
     if (speakText && speakText.trim() !== "") {
         const utterance = new SpeechSynthesisUtterance(speakText);
         utterance.rate = 0.82; // Set soft, unhurried gallery tour narration delivery speed
@@ -1060,15 +1068,16 @@ window.addEventListener('click', function(e) {
             const activeVoices = window.speechSynthesis.getVoices() || [];
             if (isChinese) {
                 utterance.lang = 'zh-CN';
+                // Lock onto modern natural human speech inflection patterns (Google/Xiaoxiao/Tingting)
                 const premiumZH = activeVoices.find(v => 
-                    (v.lang.startsWith('zh') || v.lang.includes('CN')) && 
-                    (v.name.includes('Google 普通话') || v.name.includes('Natural') || v.name.includes('Xiaoxiao') || v.name.includes('Premium') || v.name.includes('Tingting'))
+                    (v.lang.startsWith('zh') || v.lang.includes('CN') || v.lang.includes('TW') || v.lang.includes('HK')) && 
+                    (v.name.includes('Google 普通话') || v.name.includes('Natural') || v.name.includes('Xiaoxiao') || v.name.includes('Premium') || v.name.includes('Tingting') || v.name.includes('Lili') || v.name.includes('Sinji'))
                 );
                 if (premiumZH) utterance.voice = premiumZH;
             } else {
                 utterance.lang = 'en-US';
                 const premiumEN = activeVoices.find(v => 
-                    v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Zira'))
+                    v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Zira') || v.name.includes('Samantha') || v.name.includes('Karen'))
                 );
                 if (premiumEN) utterance.voice = premiumEN;
             }
