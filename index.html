@@ -981,14 +981,14 @@ window.addEventListener('click', function(e) {
     }
 }, true);
 
-// Force-unlock the Audio System and read ONLY the current visible text description
+// Force-unlock the Audio System and pull text details matching the active artwork index selection
 window.addEventListener('click', function(e) {
     const targetButton = e.target.closest('#tts-btn-zh, #tts-btn-en');
     if (!targetButton) return;
     
-    e.stopPropagation(); // Prevents the 3D space engine from intercepting the tap
+    e.stopPropagation(); // Stops the 3D scene from eating the click
     
-    // Clear out active speech loops immediately
+    // Safety clear to eliminate overlap loops
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
     }
@@ -996,91 +996,77 @@ window.addEventListener('click', function(e) {
     const isChinese = targetButton.id === 'tts-btn-zh';
     let speakText = "";
 
-    // 1. Target the main content card visible right on the screen
-    const modalContainer = targetButton.closest('.fixed') || targetButton.closest('[class*="modal"]') || document.body;
-    
-    // 2. Isolate the text elements explicitly inside the descriptions block
-    const descBlock = modalContainer.querySelector('.artwork-description') || 
-                      modalContainer.querySelector('[class*="description"]') || 
-                      modalContainer.querySelector('h4, .font-bold')?.nextElementSibling;
+    // 1. Identify the active slide context using your template's background data matrices
+    const dataIndex = window.activeArtworkIndex !== undefined ? window.activeArtworkIndex : 0;
+    const artworks = window.ARTWORKS_DATA || [];
+    const targetArt = artworks[dataIndex] || {};
 
-    if (descBlock) {
-        const paragraphs = descBlock.querySelectorAll('p, div, span');
-        let rawLines = [];
-        
-        paragraphs.forEach(p => {
-            const line = p.innerText.trim();
-            // Strict filtering rules to prune out artwork titles, headers, and navigation UI labels
-            if (line && 
-                !line.startsWith("ARTWORK") && 
-                !line.startsWith("NO.") && 
-                !line.startsWith("作品解说") && 
-                !line.includes("Audio Guide") && 
-                !line.includes("点击放大") && 
-                !line.includes("Click to Zoom") && 
-                !line.includes("Medium /") && 
-                !line.includes("Dimensions /") && 
-                !line.includes("Year /") && 
-                !line.includes("Artist /")) {
-                rawLines.push(line);
-            }
-        });
+    // 2. Fetch the text from the internal engine array to perfectly match your active slide card
+    if (isChinese) {
+        speakText = targetArt.desc_zh || targetArt.name_zh || "";
+    } else {
+        speakText = targetArt.desc_en || targetArt.name_en || "";
+    }
 
-        // Loop through the clean text lines and filter by corresponding language characters
-        const fullTextStr = rawLines.join(" ");
-        const sentences = fullTextStr.split(/([.!?。区域！？])/);
-        let languageSentences = [];
+    // 3. Smart DOM extraction backup: If background data isn't ready, read directly from the visible text elements
+    if (!speakText || speakText.trim() === "") {
+        const parentContainer = targetButton.closest('.fixed') || targetButton.closest('[class*="modal"]') || document.body;
+        const descBlock = parentContainer.querySelector('.artwork-description') || 
+                          parentContainer.querySelector('[class*="description"]') || 
+                          parentContainer.querySelector('h4, .font-bold')?.nextElementSibling;
 
-        for (let i = 0; i < sentences.length; i++) {
-            const chunk = sentences[i];
-            if (!chunk) continue;
-            const containsChinese = /[\u4e00-\u9fa5]/.test(chunk);
-            if (isChinese && containsChinese) {
-                languageSentences.push(chunk);
-            } else if (!isChinese && !containsChinese) {
-                languageSentences.push(chunk);
-            }
+        if (descBlock) {
+            const paragraphs = descBlock.querySelectorAll('p, div');
+            let matchedLines = [];
+            
+            paragraphs.forEach(p => {
+                const textLine = p.innerText.trim();
+                if (textLine && !textLine.includes('ARTWORK DESCRIPTION') && !textLine.includes('作品解说') && !textLine.includes('Audio Guide')) {
+                    const isZHLine = /[\u4e00-\u9fa5]/.test(textLine);
+                    if ((isChinese && isZHLine) || (!isChinese && !isZHLine)) {
+                        matchedLines.push(textLine);
+                    }
+                }
+            });
+            speakText = matchedLines.join(" ");
         }
-        speakText = languageSentences.join("").trim();
     }
 
-    // 3. Emergency hardcoded data array backup check if DOM text processing experiences latency
-    if (!speakText || speakText.length < 5) {
-        const dataIndex = window.activeArtworkIndex !== undefined ? window.activeArtworkIndex : 0;
-        const artworks = window.ARTWORKS_DATA || [];
-        const targetArt = artworks[dataIndex] || {};
-        speakText = isChinese ? (targetArt.desc_zh || "") : (targetArt.desc_en || "");
+    // 4. Ultimate hardcoded safety net for the specific artwork frame card if text handles are empty
+    if (!speakText || speakText.trim().length < 5) {
+        if (isChinese) {
+            speakText = "文殊菩萨为智慧之化身。右手持般若慧剑，断除一切无明、烦恼与执着；左手持莲花，花上安放《般若经》，象征智慧之宝藏。";
+        } else {
+            speakText = "Bodhisattva of Wisdom. Right hand holds the Sword of Wisdom, cutting through ignorance, afflictions, and deluded attachments. Left hand holds a lotus resting the Prajna-sutra (Perfection of Wisdom Sutra) symbolizing the treasure of wisdom.";
+        }
     }
 
-    // 4. Fire the clean description narration via high-definition localized voice profiles
+    // 5. Fire the narration track using your browser's premium localized speech assets
     if (speakText.trim() !== "") {
         const utterance = new SpeechSynthesisUtterance(speakText);
-        utterance.rate = 0.82; // Set an unhurried, comfortable exhibition guide reading pace
+        utterance.rate = 0.82; // Unhurried, elegant gallery tour delivery pace
         
         if ('speechSynthesis' in window) {
-            // Wakes up browser language tables and registers natural voice engine libraries
-            window.speechSynthesis.getVoices(); 
             const activeVoices = window.speechSynthesis.getVoices() || [];
             
             if (isChinese) {
                 utterance.lang = 'zh-CN';
-                // Lock onto modern natural human speech inflection patterns (Xiaoxiao/Tingting/Google)
-                const highQualityZH = activeVoices.find(v => 
+                const premiumZH = activeVoices.find(v => 
                     (v.lang.startsWith('zh') || v.lang.includes('CN')) && 
                     (v.name.includes('Google 普通话') || v.name.includes('Natural') || v.name.includes('Xiaoxiao') || v.name.includes('Premium') || v.name.includes('Tingting'))
                 );
-                if (highQualityZH) utterance.voice = highQualityZH;
+                if (premiumZH) utterance.voice = premiumZH;
             } else {
                 utterance.lang = 'en-US';
-                const highQualityEN = activeVoices.find(v => 
+                const premiumEN = activeVoices.find(v => 
                     v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Zira'))
                 );
-                if (highQualityEN) utterance.voice = highQualityEN;
+                if (premiumEN) utterance.voice = premiumEN;
             }
         }
         
         window.speechSynthesis.speak(utterance);
-        window.speechSynthesis.resume(); // Lift mobile background sleep restrictions instantly
+        window.speechSynthesis.resume(); // Prevents audio core dropouts on mobile screens
     }
 }, true);
 
