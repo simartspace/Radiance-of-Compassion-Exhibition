@@ -946,7 +946,7 @@
                 bgColor: "#111827",
                 auraColor: "#9ca3af",
                 iconSymbol: "导",
-                remarksZh: `自在坐于莲台，右手施无畏予愿印，垂施接引；left手拈莲花，清净无尘。舍去重彩，仅以墨线勾勒婉转衣饰与宝冠璎珞，寓意护佑平安、消解忧惧，予人安宁与勇气。`,
+                remarksZh: `自在坐于莲台，右手施无畏予愿印，垂施接引；左手拈莲花，清净无尘。舍去重彩，仅以墨线勾勒婉转衣饰与宝冠璎珞，寓意护佑平安、消解忧惧，予人安宁与勇气。`,
                 remarksEn: `Seated comfortably on a lotus throne, right hand in Abhaya/Varada mudra granting protection and fulfilling wishes; left hand holding a lotus. Rendered solely in ink lines to convey gentle compassion for protection and peace.`,
                 customImg: "images/14.jpeg"
             },
@@ -1068,9 +1068,17 @@ window.addEventListener('click', function(e) {
         }
     }
 
-    // 5. Connect directly to the specific remarks fields so it never reads a fallback text
+    // 5. Build the combined speech text: Title + Small Pause + Description Remarks
     if (targetArtItem) {
-        speakText = isChinese ? targetArtItem.remarksZh : targetArtItem.remarksEn;
+        const titleText = isChinese ? (targetArtItem.titleZh || "") : (targetArtItem.titleEn || "");
+        const remarksText = isChinese ? (targetArtItem.remarksZh || "") : (targetArtItem.remarksEn || "");
+        
+        if (titleText && remarksText) {
+            // A comma in English/Chinese adds a natural, gentle breathing pause for the AI voice
+            speakText = titleText + (isChinese ? "，" : ", ") + remarksText;
+        } else {
+            speakText = remarksText || titleText || "";
+        }
     }
 
     // 6. Fire the narration track out loud using premium human voice bundles
